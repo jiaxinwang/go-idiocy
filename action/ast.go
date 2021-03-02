@@ -19,7 +19,6 @@ func GenerateDoc(filename string) {
 		logrus.WithError(err).Error()
 		return
 	}
-
 	for _, node := range f.Decls {
 		switch node.(type) {
 		case *ast.GenDecl:
@@ -62,9 +61,7 @@ func GenerateDoc(filename string) {
 									logrus.WithField("type", "*ast.StarExpr").WithField(name.Name, fieldType).Info()
 								}
 								continue
-
 							}
-
 						}
 					}
 				}
