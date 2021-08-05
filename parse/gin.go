@@ -189,7 +189,8 @@ func (f *sourceCode) findGinInstance() {
 			}
 
 			index := f.NodeIndex(node)
-			idenNode := f.FindCallLIdent(index)
+			// idenNode := f.FindCallLIdent(index)
+			f.FindCallLIdent(index)
 
 		default:
 			logger.S.Infof(logger.ColorLightGreen("unhandle %d --> %d"), node.Pos(), node.End())

@@ -46,7 +46,6 @@ func (f *File) ParseFile(filename string) error {
 				switch spec.(type) {
 				case *ast.TypeSpec:
 					typeSpec := spec.(*ast.TypeSpec)
-					// logrus.WithField("struct", typeSpec.Name.Name).Info()
 					switch typeSpec.Type.(type) {
 					case *ast.StructType:
 						structType := typeSpec.Type.(*ast.StructType)

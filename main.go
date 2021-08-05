@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"idiocy/logger"
+	"idiocy/schema"
 	"os"
 	"path"
 	"runtime"
@@ -11,8 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	nested "github.com/antonfisher/nested-logrus-formatter"
-
-	"idiocy/action"
 
 	"github.com/urfave/cli/v2"
 )
@@ -84,28 +84,8 @@ var genDoc = cli.Command{
 }
 
 func run(c *cli.Context) error {
-	// var err error
-	var matches []string
-
-	// dir := c.String("dir")
-	// if !strings.EqualFold(dir, "") {
-	// 	if !common.IsDir(dir) {
-	// 		return fmt.Errorf("%s doesn't exist", dir)
-	// 	}
-	// 	if matches, err = filepath.Glob(path.Join(dir, "*.go")); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	logrus.Print(matches)
-	files := c.StringSlice("file")
-	if len(files) != 0 {
-		matches = append(matches, files...)
-	}
-
-	for _, v := range matches {
-		action.GenerateDoc(v)
-	}
+	projSchema := schema.NewSchema(c.String("dir"))
+	logger.S.Info(projSchema.ModulePath)
 
 	return nil
 }
