@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/squirrel v1.4.0 // indirect
 	github.com/adam-hanna/arrayOperations v0.2.6 // indirect
 	github.com/antonfisher/nested-logrus-formatter v1.3.0
-	github.com/jiaxinwang/common v0.0.1
+	github.com/jiaxinwang/common v0.0.2-0.20210730094054-0e7b269153e8 // indirect
 	github.com/jiaxinwang/err2 v0.6.2-0.20210621060754-758eb63a17f7
 	github.com/jinzhu/gorm v1.9.14 // indirect
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
