@@ -26,11 +26,11 @@ func (f *SourceCode) walk(fn func(ast.Node) bool) {
 
 func (f *SourceCode) find() {
 	f.BuildStacks()
-	f.findDecals()
-	f.findGinInstance()
+	f.FindDecals()
+	f.FindGinInstance()
 }
 
-func (f *SourceCode) findDecals() {
+func (f *SourceCode) FindDecals() {
 	for _, d := range f.astFile.Decls {
 		// only interested in generic declarations
 		if genDecl, ok := d.(*ast.GenDecl); ok {
@@ -66,7 +66,7 @@ func (f *SourceCode) findDecals() {
 	log.Println("Decls:", f.decls)
 }
 
-func (f *SourceCode) findGinInstance() {
+func (f *SourceCode) FindGinInstance() {
 
 	// var lastAssignStmt *ast.AssignStmt
 	f.walk(func(node ast.Node) bool {

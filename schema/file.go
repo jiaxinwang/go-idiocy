@@ -13,10 +13,18 @@ import (
 )
 
 type SourceFile struct {
-	Name    string
-	Path    string
-	PkgPath string
-	Imports []*ast.ImportSpec
+	FullPath   string
+	Path       string
+	PkgPath    string
+	Imports    []*ast.ImportSpec
+	fset       *token.FileSet
+	astFile    *ast.File
+	src        []byte
+	filename   string
+	main       bool
+	decls      map[string]string
+	boxes      []Box
+	fullStacks []ast.Node
 }
 
 func (f *SourceFile) ParseFile(filename string) error {
@@ -28,7 +36,7 @@ func (f *SourceFile) ParseFile(filename string) error {
 		return err
 	}
 
-	f.Name = astFile.Name.Name
+	f.FullPath = astFile.Name.Name
 	f.Imports = astFile.Imports
 	logger.S.Info(astFile.Scope.Objects)
 	logger.S.Info(astFile.Comments)

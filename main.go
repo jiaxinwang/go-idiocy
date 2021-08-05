@@ -88,7 +88,14 @@ func run(c *cli.Context) error {
 	projSchema.LoadSourceFiles()
 
 	for _, v := range projSchema.SourceFile {
+		v.ParseFile(v.FullPath)
 		logger.S.Infof("%#v", v)
+
+		v.BuildStacks()
+
+		// f.BuildStacks()
+		// f.FindDecals()
+		// f.FindGinInstance()
 
 	}
 

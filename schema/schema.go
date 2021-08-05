@@ -56,7 +56,7 @@ func (schema *Schema) LoadSourceFiles() (err error) {
 		} else {
 			if strings.EqualFold(filepath.Ext(filename), ".go") {
 				logger.S.Debug(filename)
-				schema.SourceFile = append(schema.SourceFile, SourceFile{Name: filename, Path: filepath.Dir(filename)})
+				schema.SourceFile = append(schema.SourceFile, SourceFile{FullPath: filename, Path: filepath.Dir(filename)})
 			}
 		}
 		return nil
