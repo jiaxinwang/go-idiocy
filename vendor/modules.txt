@@ -7,13 +7,8 @@
 github.com/antonfisher/nested-logrus-formatter
 # github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
 github.com/cpuguy83/go-md2man/v2/md2man
-# github.com/gabriel-vasile/mimetype v1.1.2
-github.com/gabriel-vasile/mimetype
-github.com/gabriel-vasile/mimetype/internal/json
-github.com/gabriel-vasile/mimetype/internal/matchers
-# github.com/jiaxinwang/common v0.0.1
+# github.com/jiaxinwang/common v0.0.2-0.20210730094054-0e7b269153e8
 ## explicit
-github.com/jiaxinwang/common/fs
 # github.com/jiaxinwang/err2 v0.6.2-0.20210621060754-758eb63a17f7
 ## explicit
 github.com/jiaxinwang/err2

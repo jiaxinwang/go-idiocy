@@ -12,14 +12,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type File struct {
+type SourceFile struct {
 	Name    string
 	Path    string
 	PkgPath string
 	Imports []*ast.ImportSpec
 }
 
-func (f *File) ParseFile(filename string) error {
+func (f *SourceFile) ParseFile(filename string) error {
 	fset := token.NewFileSet()
 	path, _ := filepath.Abs(filename)
 	astFile, err := parser.ParseFile(fset, path, nil, parser.AllErrors)

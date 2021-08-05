@@ -3,6 +3,10 @@ package schema
 import (
 	"idiocy/logger"
 	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/jiaxinwang/err2"
@@ -10,8 +14,10 @@ import (
 )
 
 type Schema struct {
-	ModulePath string
-	cacheStore *sync.Map
+	ModuleFilePath string
+	ModulePath     string
+	cacheStore     *sync.Map
+	SourceFile     []SourceFile
 }
 
 func NewSchema(modFilePath string) *Schema {
@@ -28,6 +34,32 @@ func NewSchema(modFilePath string) *Schema {
 func (schema *Schema) ParseModules(filename string) (err error) {
 	defer err2.Return(&err)
 	content := err2.Bytes.Try(ioutil.ReadFile(filename))
+	schema.ModuleFilePath = filename
 	schema.ModulePath = modfile.ModulePath(content)
+	return nil
+}
+
+var skips = []string{
+	".git",
+	"vendor",
+}
+
+func (schema *Schema) LoadSourceFiles() (err error) {
+	sourceRoot := path.Dir(schema.ModuleFilePath)
+	err = filepath.Walk(sourceRoot, func(filename string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			for _, v := range skips {
+				if strings.EqualFold(filename, path.Join(sourceRoot, v)) {
+					return filepath.SkipDir
+				}
+			}
+		} else {
+			if strings.EqualFold(filepath.Ext(filename), ".go") {
+				logger.S.Debug(filename)
+				schema.SourceFile = append(schema.SourceFile, SourceFile{Name: filename, Path: filepath.Dir(filename)})
+			}
+		}
+		return nil
+	})
 	return nil
 }

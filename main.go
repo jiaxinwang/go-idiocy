@@ -85,7 +85,12 @@ var genDoc = cli.Command{
 
 func run(c *cli.Context) error {
 	projSchema := schema.NewSchema(c.String("dir"))
-	logger.S.Info(projSchema.ModulePath)
+	projSchema.LoadSourceFiles()
+
+	for _, v := range projSchema.SourceFile {
+		logger.S.Infof("%#v", v)
+
+	}
 
 	return nil
 }
