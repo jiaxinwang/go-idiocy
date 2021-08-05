@@ -9,29 +9,18 @@ import (
 	"log"
 )
 
-type SourceCode struct {
-	fset       *token.FileSet
-	astFile    *ast.File
-	src        []byte
-	filename   string
-	main       bool
-	decls      map[string]string
-	boxes      []Box
-	fullStacks []ast.Node
+func (f *SourceFile) walk(fn func(ast.Node) bool) {
+	ast.Walk(walker(fn), f.AstFile)
 }
 
-func (f *SourceCode) walk(fn func(ast.Node) bool) {
-	ast.Walk(walker(fn), f.astFile)
-}
-
-func (f *SourceCode) find() {
+func (f *SourceFile) find() {
 	f.BuildStacks()
 	f.FindDecals()
 	f.FindGinInstance()
 }
 
-func (f *SourceCode) FindDecals() {
-	for _, d := range f.astFile.Decls {
+func (f *SourceFile) FindDecals() {
+	for _, d := range f.AstFile.Decls {
 		// only interested in generic declarations
 		if genDecl, ok := d.(*ast.GenDecl); ok {
 
@@ -51,7 +40,7 @@ func (f *SourceCode) FindDecals() {
 							// TODO: only basic literals work currently
 							switch v := vSpec.Values[i].(type) {
 							case *ast.BasicLit:
-								f.decls[vSpec.Names[i].Name] = v.Value
+								f.Decls[vSpec.Names[i].Name] = v.Value
 							default:
 								log.Printf("Name: %s - Unsupported ValueSpec: %+v\n", vSpec.Names[i].Name, v)
 							}
@@ -63,10 +52,10 @@ func (f *SourceCode) FindDecals() {
 		}
 	}
 
-	log.Println("Decls:", f.decls)
+	log.Println("Decls:", f.Decls)
 }
 
-func (f *SourceCode) FindGinInstance() {
+func (f *SourceFile) FindGinInstance() {
 
 	// var lastAssignStmt *ast.AssignStmt
 	f.walk(func(node ast.Node) bool {
@@ -75,7 +64,7 @@ func (f *SourceCode) FindGinInstance() {
 		}
 
 		logger.S.Infof("----- %d --> %d -----", int(node.Pos()), int(node.End()))
-		logger.S.Info(string(f.src[node.Pos()-1 : node.End()-1]))
+		logger.S.Info(string(f.Content[node.Pos()-1 : node.End()-1]))
 
 		// BadExpr
 		// Ident
@@ -126,10 +115,10 @@ func (f *SourceCode) FindGinInstance() {
 		switch {
 		case funcLitOK:
 			logger.S.Infof("funcLit %d --> %d", funcLitExpr.Body.Lbrace, funcLitExpr.Body.Rbrace)
-			logger.S.Info(string(f.src[funcLitExpr.Body.Lbrace-1 : funcLitExpr.Body.Rbrace-1]))
+			logger.S.Info(string(f.Content[funcLitExpr.Body.Lbrace-1 : funcLitExpr.Body.Rbrace-1]))
 		case blockStmtOK:
 			logger.S.Infof("block %d --> %d", blockStmt.Lbrace, blockStmt.Rbrace)
-			logger.S.Info(string(f.src[blockStmt.Lbrace-1 : blockStmt.Rbrace-1]))
+			logger.S.Info(string(f.Content[blockStmt.Lbrace-1 : blockStmt.Rbrace-1]))
 		case assignOK:
 			logger.S.Infof("assign %s", assignStmt.Tok.String())
 		case identOK:
@@ -153,7 +142,7 @@ func (f *SourceCode) FindGinInstance() {
 
 		default:
 			logger.S.Infof(logger.ColorLightGreen("unhandle %d --> %d"), node.Pos(), node.End())
-			logger.S.Info(logger.ColorLightGreen(string(f.src[node.Pos()-1 : node.End()-1])))
+			logger.S.Info(logger.ColorLightGreen(string(f.Content[node.Pos()-1 : node.End()-1])))
 		}
 
 		// switch x := callExpr.Args[0].(type) {
@@ -209,14 +198,23 @@ func FindRiceBoxes(filename string, src []byte) error {
 		return err
 	}
 
-	f := &SourceCode{fset: fset, astFile: astFile, src: src, filename: filename}
-	f.decls = make(map[string]string)
+	f := &SourceFile{FileSet: fset, AstFile: astFile, Content: src}
+	f.Decls = make(map[string]string)
 	f.find()
 	return nil
 
 }
+func (f *SourceFile) EnumerateStruct() {
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if structType, ok := n.(*ast.StructType); ok {
+			logger.S.Infof("%#v", structType)
+			logger.S.Info(string(f.Content[structType.Pos()-1 : structType.End()-1]))
+		}
+		return true
+	})
+}
 
-func (f *SourceCode) BuildStacks() {
+func (f *SourceFile) BuildStacks() {
 	f.fullStacks = []ast.Node{}
 	f.walk(func(node ast.Node) bool {
 		if node == nil {
@@ -227,7 +225,7 @@ func (f *SourceCode) BuildStacks() {
 	})
 }
 
-func (f *SourceCode) NodeIndex(node ast.Node) int {
+func (f *SourceFile) NodeIndex(node ast.Node) int {
 	for k, v := range f.fullStacks {
 		switch {
 		case v.Pos().IsValid() != node.Pos().IsValid():
@@ -251,12 +249,12 @@ func (f *SourceCode) NodeIndex(node ast.Node) int {
 	return -1
 }
 
-func (f *SourceCode) StacksLength() int {
+func (f *SourceFile) StacksLength() int {
 	return len(f.fullStacks)
 }
 
 // /ast.Ident
-func (f *SourceCode) FindCallLIdent(callIndex int) ast.Node {
+func (f *SourceFile) FindCallLIdent(callIndex int) ast.Node {
 	lIndex := callIndex - 1
 	llIndex := callIndex - 2
 	if lIndex < 0 || llIndex < 0 {
@@ -266,7 +264,7 @@ func (f *SourceCode) FindCallLIdent(callIndex int) ast.Node {
 	lNode := f.fullStacks[lIndex]
 	llNode := f.fullStacks[llIndex]
 
-	_, identOK := lNode.(*ast.Ident)                 //ObjKind.var
+	_, identOK := lNode.(*ast.Ident)                 // ObjKind.var
 	assignStmt, assignOK := llNode.(*ast.AssignStmt) // Lhs,IsOperator
 	if !assignOK || !identOK {
 		return nil
