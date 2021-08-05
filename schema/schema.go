@@ -21,8 +21,6 @@ func NewSchema(modFilePath string) *Schema {
 	})
 
 	ret := new(Schema)
-	logger.S.Info(ret)
-
 	err2.Try(ret.ParseModules(modFilePath))
 	return ret
 }

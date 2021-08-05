@@ -5,7 +5,7 @@ import (
 	"idiocy/logger"
 )
 
-func (f *sourceCode) BuildStacks() {
+func (f *SourceCode) BuildStacks() {
 	f.fullStacks = []ast.Node{}
 	f.walk(func(node ast.Node) bool {
 		if node == nil {
@@ -16,7 +16,7 @@ func (f *sourceCode) BuildStacks() {
 	})
 }
 
-func (f *sourceCode) NodeIndex(node ast.Node) int {
+func (f *SourceCode) NodeIndex(node ast.Node) int {
 	for k, v := range f.fullStacks {
 		switch {
 		case v.Pos().IsValid() != node.Pos().IsValid():
@@ -40,12 +40,12 @@ func (f *sourceCode) NodeIndex(node ast.Node) int {
 	return -1
 }
 
-func (f *sourceCode) StacksLength() int {
+func (f *SourceCode) StacksLength() int {
 	return len(f.fullStacks)
 }
 
 // /ast.Ident
-func (f *sourceCode) FindCallLIdent(callIndex int) ast.Node {
+func (f *SourceCode) FindCallLIdent(callIndex int) ast.Node {
 	lIndex := callIndex - 1
 	llIndex := callIndex - 2
 	if lIndex < 0 || llIndex < 0 {

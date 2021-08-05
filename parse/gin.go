@@ -13,7 +13,7 @@ import (
 	"github.com/jiaxinwang/err2"
 )
 
-type sourceCode struct {
+type SourceCode struct {
 	fset       *token.FileSet
 	astFile    *ast.File
 	src        []byte
@@ -24,11 +24,11 @@ type sourceCode struct {
 	fullStacks []ast.Node
 }
 
-func (f *sourceCode) walk(fn func(ast.Node) bool) {
+func (f *SourceCode) walk(fn func(ast.Node) bool) {
 	ast.Walk(walker(fn), f.astFile)
 }
 
-func (f *sourceCode) find() {
+func (f *SourceCode) find() {
 	f.BuildStacks()
 	f.findDecals()
 	f.findGinInstance()
@@ -53,7 +53,7 @@ func Gin(dir string) error {
 
 				b := err2.Bytes.Try(fs.ReadBytes(curDir))
 
-				code := &sourceCode{
+				code := &SourceCode{
 					fset:     fset,
 					astFile:  f,
 					src:      b,
@@ -71,7 +71,7 @@ func Gin(dir string) error {
 	return nil
 }
 
-func (f *sourceCode) findDecals() {
+func (f *SourceCode) findDecals() {
 	for _, d := range f.astFile.Decls {
 		// only interested in generic declarations
 		if genDecl, ok := d.(*ast.GenDecl); ok {
@@ -107,7 +107,7 @@ func (f *sourceCode) findDecals() {
 	log.Println("Decls:", f.decls)
 }
 
-func (f *sourceCode) findGinInstance() {
+func (f *SourceCode) findGinInstance() {
 
 	// var lastAssignStmt *ast.AssignStmt
 	f.walk(func(node ast.Node) bool {
@@ -250,7 +250,7 @@ func FindRiceBoxes(filename string, src []byte) error {
 		return err
 	}
 
-	f := &sourceCode{fset: fset, astFile: astFile, src: src, filename: filename}
+	f := &SourceCode{fset: fset, astFile: astFile, src: src, filename: filename}
 	f.decls = make(map[string]string)
 	f.find()
 	return nil
