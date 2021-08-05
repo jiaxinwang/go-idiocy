@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/jiaxinwang/common"
 	"github.com/sirupsen/logrus"
 
 	nested "github.com/antonfisher/nested-logrus-formatter"
@@ -86,18 +84,18 @@ var genDoc = cli.Command{
 }
 
 func run(c *cli.Context) error {
-	var err error
+	// var err error
 	var matches []string
 
-	dir := c.String("dir")
-	if !strings.EqualFold(dir, "") {
-		if !common.IsDir(dir) {
-			return fmt.Errorf("%s doesn't exist", dir)
-		}
-		if matches, err = filepath.Glob(path.Join(dir, "*.go")); err != nil {
-			return err
-		}
-	}
+	// dir := c.String("dir")
+	// if !strings.EqualFold(dir, "") {
+	// 	if !common.IsDir(dir) {
+	// 		return fmt.Errorf("%s doesn't exist", dir)
+	// 	}
+	// 	if matches, err = filepath.Glob(path.Join(dir, "*.go")); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	logrus.Print(matches)
 	files := c.StringSlice("file")

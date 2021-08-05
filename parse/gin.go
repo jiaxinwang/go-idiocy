@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -9,9 +8,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/jiaxinwang/common/fs"
+	"github.com/jiaxinwang/err2"
 )
 
-type file struct {
+type sourceCode struct {
 	fset     *token.FileSet
 	astFile  *ast.File
 	src      []byte
@@ -21,34 +23,25 @@ type file struct {
 	boxes    []Box
 }
 
-func (f *file) walk(fn func(ast.Node) bool) {
+func (f *sourceCode) walk(fn func(ast.Node) bool) {
 	ast.Walk(walker(fn), f.astFile)
 }
 
-func (f *file) find() {
+func (f *sourceCode) find() {
 	f.findDecals()
 	f.findGinDefault()
 }
 
-// func main() {
-// 	// log.SetOutput(ioutil.Discard)
-// 	boxes, err := FindRiceBoxes("testConst.go", src)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println("Boxes:", boxes)
-// }
-
 // Gin ...
 func Gin(dir string) error {
-	err := filepath.Walk(dir,
+	var err error
+	defer err2.Return(&err)
+	err = filepath.Walk(dir,
 		func(curDir string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if !info.IsDir() {
-				logger.S.Infow(curDir, "size", info.Size())
-
 				fset := token.NewFileSet()
 				path, _ := filepath.Abs(curDir)
 				f, err := parser.ParseFile(fset, path, nil, parser.AllErrors)
@@ -56,22 +49,16 @@ func Gin(dir string) error {
 					return err
 				}
 
-				aFile := &file{
+				b := err2.Bytes.Try(fs.ReadBytes(curDir))
+
+				code := &sourceCode{
 					fset:     fset,
 					astFile:  f,
-					src:      []byte{},
+					src:      b,
 					filename: curDir,
 					decls:    make(map[string]string),
 				}
-				aFile.find()
-
-				// for _, devl := range f.Decls {
-				// 	fn, ok := devl.(*ast.FuncDecl)
-				// 	if !ok {
-				// 		continue
-				// 	}
-				// 	logger.S.Info(fn.Name.Name)
-				// }
+				code.find()
 
 			}
 			return err
@@ -82,7 +69,7 @@ func Gin(dir string) error {
 	return nil
 }
 
-func (f *file) findDecals() {
+func (f *sourceCode) findDecals() {
 	for _, d := range f.astFile.Decls {
 		// only interested in generic declarations
 		if genDecl, ok := d.(*ast.GenDecl); ok {
@@ -118,27 +105,59 @@ func (f *file) findDecals() {
 	log.Println("Decls:", f.decls)
 }
 
-func (f *file) findGinDefault() {
+func (f *sourceCode) findGinDefault() {
 	f.walk(func(node ast.Node) bool {
-		keyExpr, keyOK := node.(*ast.Ident)
+		if node == nil {
+			return false
+		}
+
+		// logger.S.Infof("-----")
+		// logger.S.Infof("%#v", node)
+		// logger.S.Infof("%#v", node.Pos())
+		if node.Pos().IsValid() {
+			logger.S.Infof("node.Pos() %d", int(node.Pos()))
+		}
+		if node.End().IsValid() {
+			logger.S.Infof("node.End() %d", int(node.End()))
+		}
+		b := f.src
+		// f.src[9:13]
+		logger.S.Info(len(b))
+		// logger.S.Info(string(b[int(node.Pos()) : int(node.End())-1]))
+
+		// logger.S.Infof("----------")
+		identExpr, identOK := node.(*ast.Ident)
 		callExpr, callOK := node.(*ast.CallExpr)
 		assignExpr, assignOK := node.(*ast.AssignStmt)
 		switch {
 		case assignOK:
 			logger.S.Info(assignExpr.Tok.String())
-		case keyOK:
-			logger.S.Info(keyExpr.Name)
-			logger.S.Infof("%#v", keyExpr)
+		case identOK:
+			logger.S.Info(identExpr.Name)
+			logger.S.Infof("%#v", identExpr)
+			if identExpr.Obj != nil {
+				logger.S.Infof("%#v", identExpr.Obj)
+				if identExpr.Obj.Decl != nil {
+					logger.S.Infof("%#v", identExpr.Obj.Decl)
+				}
+			}
+
 		case callOK:
 			isMustFindBox := isFuncCallWithName(callExpr.Fun, "gin", "Default")
 			if !(isMustFindBox) || len(callExpr.Args) != 0 {
 				return false
 			}
+			// logger.S.Infof("%#v", callExpr)
+			// logger.S.Infof("%+v", callExpr.Args)
+			// logger.S.Infof("%+v", callExpr.Ellipsis)
+			// logger.S.Infof("%+v", callExpr.Fun)
+			// logger.S.Infof("%+v", callExpr.Lparen)
+			// logger.S.Infof("%+v", callExpr.Rparen)
 
-			logger.S.Infow(fmt.Sprintf("gin.Default Call! @%+v", callExpr),
-				"pos", node.Pos(),
-				"end", node.End(),
-			)
+			// logger.S.Infow(fmt.Sprintf("gin.Default Call! @%+v", callExpr),
+			// 	"pos", node.Pos(),
+			// 	"end", node.End(),
+			// )
 		}
 
 		// switch x := callExpr.Args[0].(type) {
@@ -198,7 +217,7 @@ func FindRiceBoxes(filename string, src []byte) error {
 		return err
 	}
 
-	f := &file{fset: fset, astFile: astFile, src: src, filename: filename}
+	f := &sourceCode{fset: fset, astFile: astFile, src: src, filename: filename}
 	f.decls = make(map[string]string)
 	f.find()
 	return nil
