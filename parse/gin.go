@@ -14,13 +14,14 @@ import (
 )
 
 type sourceCode struct {
-	fset     *token.FileSet
-	astFile  *ast.File
-	src      []byte
-	filename string
-	main     bool
-	decls    map[string]string
-	boxes    []Box
+	fset       *token.FileSet
+	astFile    *ast.File
+	src        []byte
+	filename   string
+	main       bool
+	decls      map[string]string
+	boxes      []Box
+	fullStacks []ast.Node
 }
 
 func (f *sourceCode) walk(fn func(ast.Node) bool) {
@@ -28,8 +29,9 @@ func (f *sourceCode) walk(fn func(ast.Node) bool) {
 }
 
 func (f *sourceCode) find() {
+	f.BuildStacks()
 	f.findDecals()
-	f.findGinDefault()
+	f.findGinInstance()
 }
 
 // Gin ...
@@ -105,33 +107,72 @@ func (f *sourceCode) findDecals() {
 	log.Println("Decls:", f.decls)
 }
 
-func (f *sourceCode) findGinDefault() {
+func (f *sourceCode) findGinInstance() {
+
+	// var lastAssignStmt *ast.AssignStmt
 	f.walk(func(node ast.Node) bool {
 		if node == nil {
 			return false
 		}
 
-		// logger.S.Infof("-----")
-		// logger.S.Infof("%#v", node)
-		// logger.S.Infof("%#v", node.Pos())
-		if node.Pos().IsValid() {
-			logger.S.Infof("node.Pos() %d", int(node.Pos()))
-		}
-		if node.End().IsValid() {
-			logger.S.Infof("node.End() %d", int(node.End()))
-		}
-		b := f.src
-		// f.src[9:13]
-		logger.S.Info(len(b))
-		// logger.S.Info(string(b[int(node.Pos()) : int(node.End())-1]))
+		logger.S.Infof("----- %d --> %d -----", int(node.Pos()), int(node.End()))
+		logger.S.Info(string(f.src[node.Pos()-1 : node.End()-1]))
 
-		// logger.S.Infof("----------")
+		// BadExpr
+		// Ident
 		identExpr, identOK := node.(*ast.Ident)
-		callExpr, callOK := node.(*ast.CallExpr)
-		assignExpr, assignOK := node.(*ast.AssignStmt)
+		// Ellipsis
+		// BasicLit
+
+		//!FuncLit A function literal represents an anonymous function.
+		funcLitExpr, funcLitOK := node.(*ast.FuncLit) // FuncLit
+		// CompositeLit
+		// ParenExpr
+		// SelectorExpr
+		// IndexExpr
+		// SliceExpr
+		// TypeAssertExpr
+
+		callExpr, callOK := node.(*ast.CallExpr) // CallExpr
+
+		// StarExpr
+		// UnaryExpr
+		// BinaryExpr
+		// KeyValueExpr
+
+		// BadStmt
+		// DeclStmt
+		// EmptyStmt
+		// LabeledStmt
+		// ExprStmt
+		// SendStmt
+		// IncDecStmt
+
+		assignStmt, assignOK := node.(*ast.AssignStmt) // AssignStmt
+		// GoStmt
+		// DeferStmt
+		// ReturnStmt
+		// BranchStmt
+
+		blockStmt, blockStmtOK := node.(*ast.BlockStmt) // BlockStmt
+		// IfStmt
+		// CaseClause
+		// SwitchStmt
+		// TypeSwitchStmt
+		// CommClause
+		// SelectStmt
+		// ForStmt
+		// RangeStmt
+
 		switch {
+		case funcLitOK:
+			logger.S.Infof("funcLit %d --> %d", funcLitExpr.Body.Lbrace, funcLitExpr.Body.Rbrace)
+			logger.S.Info(string(f.src[funcLitExpr.Body.Lbrace-1 : funcLitExpr.Body.Rbrace-1]))
+		case blockStmtOK:
+			logger.S.Infof("block %d --> %d", blockStmt.Lbrace, blockStmt.Rbrace)
+			logger.S.Info(string(f.src[blockStmt.Lbrace-1 : blockStmt.Rbrace-1]))
 		case assignOK:
-			logger.S.Info(assignExpr.Tok.String())
+			logger.S.Infof("assign %s", assignStmt.Tok.String())
 		case identOK:
 			logger.S.Info(identExpr.Name)
 			logger.S.Infof("%#v", identExpr)
@@ -143,21 +184,16 @@ func (f *sourceCode) findGinDefault() {
 			}
 
 		case callOK:
-			isMustFindBox := isFuncCallWithName(callExpr.Fun, "gin", "Default")
-			if !(isMustFindBox) || len(callExpr.Args) != 0 {
+			if !DetectInstanceCall(callExpr.Fun, ginInstanceCall) {
 				return false
 			}
-			// logger.S.Infof("%#v", callExpr)
-			// logger.S.Infof("%+v", callExpr.Args)
-			// logger.S.Infof("%+v", callExpr.Ellipsis)
-			// logger.S.Infof("%+v", callExpr.Fun)
-			// logger.S.Infof("%+v", callExpr.Lparen)
-			// logger.S.Infof("%+v", callExpr.Rparen)
 
-			// logger.S.Infow(fmt.Sprintf("gin.Default Call! @%+v", callExpr),
-			// 	"pos", node.Pos(),
-			// 	"end", node.End(),
-			// )
+			index := f.NodeIndex(node)
+			idenNode := f.FindCallLIdent(index)
+
+		default:
+			logger.S.Infof(logger.ColorLightGreen("unhandle %d --> %d"), node.Pos(), node.End())
+			logger.S.Info(logger.ColorLightGreen(string(f.src[node.Pos()-1 : node.End()-1])))
 		}
 
 		// switch x := callExpr.Args[0].(type) {
@@ -185,10 +221,6 @@ func (f *sourceCode) findGinDefault() {
 
 // helpers
 // =======
-func isFuncCallWithName(expr ast.Expr, pkg, name string) bool {
-	sel, ok := expr.(*ast.SelectorExpr)
-	return ok && isIdent(sel.X, pkg) && isIdent(sel.Sel, name)
-}
 
 func isIdent(expr ast.Expr, ident string) bool {
 	id, ok := expr.(*ast.Ident)
