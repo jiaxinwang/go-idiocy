@@ -206,12 +206,39 @@ func FindRiceBoxes(filename string, src []byte) error {
 }
 func (f *SourceFile) EnumerateStruct() {
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
-		if structType, ok := n.(*ast.StructType); ok {
-			logger.S.Infof("%#v", structType)
-			logger.S.Info(string(f.Content[structType.Pos()-1 : structType.End()-1]))
+		if n == nil {
+			return true
 		}
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+		structType, structTypeOK := n.(*ast.StructType)
+		typeSpec, typeSpecOK := n.(*ast.TypeSpec)
+		switch {
+		case typeSpecOK:
+			typePos := -1
+			if typeSpec.Type.Pos().IsValid() {
+				typePos = int(typeSpec.Type.Pos())
+			}
+			Structs = append(Structs, Struct{f.FullPath, typeSpec.Name.Name, typePos, int(typeSpec.Name.NamePos), f.AstFile, &n})
+
+		case structTypeOK:
+			_ = structType
+			sentry := false
+			for _, v := range Structs {
+				if v.FullPath == f.FullPath && v.TypePos == int(structType.Pos()) {
+					sentry = true
+					break
+				}
+			}
+
+			if !sentry {
+				Structs = append(Structs, Struct{f.FullPath, "", -1, int(structType.Pos()), f.AstFile, &n})
+			}
+		}
+
 		return true
 	})
+
 }
 
 func (f *SourceFile) BuildStacks() {
@@ -251,6 +278,11 @@ func (f *SourceFile) NodeIndex(node ast.Node) int {
 
 func (f *SourceFile) StacksLength() int {
 	return len(f.fullStacks)
+}
+
+func (f *SourceFile) PrintNode(callIndex int) {
+	node := f.fullStacks[callIndex]
+	logger.S.Debug(string(f.Content[node.Pos()-1 : node.End()-1]))
 }
 
 // /ast.Ident
