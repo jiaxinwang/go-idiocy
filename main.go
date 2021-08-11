@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"idiocy/logger"
 	"idiocy/schema"
 	"os"
 	"path"
@@ -88,10 +87,11 @@ func run(c *cli.Context) error {
 	projSchema.LoadSourceFiles()
 
 	for _, v := range projSchema.SourceFile {
-		v.ParseFile(v.FullPath)
-		logger.S.Infof("%#v", v)
-
+		v.ParseFile()
 		v.BuildStacks()
+		v.EnumerateStruct()
+
+		// logger.S.Infof("%#v", v)
 
 		// f.BuildStacks()
 		// f.FindDecals()
