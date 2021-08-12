@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go/ast"
+	"idiocy/logger"
 	"idiocy/schema"
 	"os"
 	"path"
@@ -93,12 +94,15 @@ func run(c *cli.Context) error {
 		v.BuildStacks()
 		v.EnumerateStructAndGinVars()
 		v.EnumerateGinHandles()
+	}
 
-		// logger.S.Infof("%#v", v)
+	for _, v := range projSchema.SourceFile {
+		v.ParseFile()
+		v.EnumerateGinHandles()
+	}
 
-		// f.BuildStacks()
-		// f.FindDecals()
-		// f.FindGinInstance()
+	for _, v := range schema.APIs {
+		logger.S.Infof("%#v", v)
 
 	}
 

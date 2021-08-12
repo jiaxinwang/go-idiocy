@@ -11,6 +11,12 @@ import (
 	"github.com/jiaxinwang/err2"
 )
 
+type API struct {
+	SourceFile *SourceFile
+	Path       string
+	Method     string
+}
+
 type SourceFile struct {
 	FullPath   string
 	Path       string
@@ -26,72 +32,6 @@ type SourceFile struct {
 }
 
 func (f *SourceFile) ParseFile() error {
-	// fset := token.NewFileSet()
-	// path, _ := filepath.Abs(filename)
-	// astFile, err := parser.ParseFile(fset, path, nil, parser.AllErrors)
-	// if err != nil {
-	// 	logrus.WithError(err).Error()
-	// 	return err
-	// }
-
-	// f.FullPath = astFile.Name.Name
-	// f.Imports = astFile.Imports
-	// logger.S.Info(astFile.Scope.Objects)
-	// logger.S.Info(astFile.Comments)
-	// logger.S.Info(astFile.Name.Obj)
-
-	// for _, v := range astFile.Imports {
-	// 	logger.S.Infow("import", "path", v.Path)
-	// }
-
-	// for _, node := range astFile.Decls {
-	// 	switch node.(type) {
-	// 	case *ast.GenDecl:
-	// 		genDecl := node.(*ast.GenDecl)
-	// 		for _, spec := range genDecl.Specs {
-	// 			switch spec.(type) {
-	// 			case *ast.TypeSpec:
-	// 				typeSpec := spec.(*ast.TypeSpec)
-	// 				switch typeSpec.Type.(type) {
-	// 				case *ast.StructType:
-	// 					structType := typeSpec.Type.(*ast.StructType)
-	// 					for _, field := range structType.Fields.List {
-	// 						ident, ok := field.Type.(*ast.Ident)
-	// 						if ok {
-	// 							fieldType := ident.Name
-	// 							for _, name := range field.Names {
-	// 								logrus.WithField("type", "*ast.Ident").WithField(name.Name, fieldType).Info()
-	// 							}
-	// 							continue
-	// 						}
-	// 						selectorExpr, ok := field.Type.(*ast.SelectorExpr)
-	// 						if ok {
-	// 							fieldType := selectorExpr.Sel.Name
-	// 							for _, name := range field.Names {
-	// 								logrus.WithField("type", "*ast.SelectorExpr").WithField(name.Name, fieldType).Info()
-	// 							}
-	// 							continue
-
-	// 						}
-
-	// 						starExpr, ok := field.Type.(*ast.StarExpr)
-	// 						if ok {
-	// 							selectorExpr, ok := starExpr.X.(*ast.SelectorExpr)
-	// 							if !ok {
-	// 								continue
-	// 							}
-	// 							fieldType := selectorExpr.Sel.Name
-	// 							for _, name := range field.Names {
-	// 								logrus.WithField("type", "*ast.StarExpr").WithField(name.Name, fieldType).Info()
-	// 							}
-	// 							continue
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	fset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fset, f.FullPath, nil, parser.AllErrors)

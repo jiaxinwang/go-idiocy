@@ -168,8 +168,35 @@ func (f *SourceFile) EnumerateGinHandles() {
 		callExpr, callExprOK := n.(*ast.CallExpr)
 		switch {
 		case callExprOK:
-			logger.S.Infof("%#v", callExpr)
+			if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
+				_ = selectorExpr
 
+				if x, sel, ok := extractSelectorExpr(callExpr.Fun.(*ast.SelectorExpr)); ok {
+					switch sel.Name {
+					case "GET", "PUT", "PATH", "POST", "DELETE":
+						logger.S.Infof("x %#v", x)
+						logger.S.Infof("sel %#v", sel)
+						logger.S.Infof("args %#v", callExpr.Args)
+						logger.S.Infof("args %#v", callExpr.Args[0]) // path
+						if len(callExpr.Args) > 1 {
+							logger.S.Infof("args %#v", callExpr.Args[1]) // func
+						}
+
+						p := ""
+						if bl, blOK := callExpr.Args[0].(*ast.BasicLit); blOK {
+							p = bl.Value
+						}
+
+						APIs = append(APIs, API{
+							f,
+							p,
+							sel.Name,
+						})
+
+					}
+				}
+
+			}
 		}
 		return true
 	})

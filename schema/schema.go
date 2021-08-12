@@ -13,6 +13,12 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+var APIs []API
+
+func init() {
+	APIs = make([]API, 0)
+}
+
 type Schema struct {
 	ModuleFilePath string
 	ModulePath     string
