@@ -20,28 +20,17 @@ func (f *SourceFile) find() {
 
 func (f *SourceFile) FindDecals() {
 	for _, d := range f.AstFile.Decls {
-		// only interested in generic declarations
 		if genDecl, ok := d.(*ast.GenDecl); ok {
-
-			// handle const's and vars
 			if genDecl.Tok == token.CONST || genDecl.Tok == token.VAR {
-
-				// there may be multiple
-				// i.e. const ( ... )
 				for _, cDecl := range genDecl.Specs {
-
-					// havn't find another kind of spec then value but better check
 					if vSpec, ok := cDecl.(*ast.ValueSpec); ok {
-						log.Printf("const ValueSpec: %+v\n", vSpec)
-
-						// iterate over Name/Value pair
 						for i := 0; i < len(vSpec.Names); i++ {
 							// TODO: only basic literals work currently
 							switch v := vSpec.Values[i].(type) {
 							case *ast.BasicLit:
 								f.Decls[vSpec.Names[i].Name] = v.Value
 							default:
-								log.Printf("Name: %s - Unsupported ValueSpec: %+v\n", vSpec.Names[i].Name, v)
+								logger.S.Infof("Name: %s - Unsupported ValueSpec: %+v\n", vSpec.Names[i].Name, v)
 							}
 						}
 					}
