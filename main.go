@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go/ast"
 	"idiocy/schema"
 	"os"
 	"path"
@@ -87,9 +88,11 @@ func run(c *cli.Context) error {
 	projSchema.LoadSourceFiles()
 
 	for _, v := range projSchema.SourceFile {
+		v.GinIdents = make([]*ast.Ident, 0)
 		v.ParseFile()
 		v.BuildStacks()
-		v.EnumerateStruct()
+		v.EnumerateStructAndGinVars()
+		v.EnumerateGinHandles()
 
 		// logger.S.Infof("%#v", v)
 

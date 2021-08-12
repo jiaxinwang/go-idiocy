@@ -21,8 +21,8 @@ type SourceFile struct {
 	Content    []byte
 	main       bool
 	Decls      map[string]string
-	boxes      []Box
 	fullStacks []ast.Node
+	GinIdents  []*ast.Ident
 }
 
 func (f *SourceFile) ParseFile() error {

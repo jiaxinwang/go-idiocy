@@ -2,7 +2,6 @@ package schema
 
 import (
 	"go/ast"
-	"go/parser"
 	"go/token"
 	"idiocy/logger"
 	"idiocy/platform"
@@ -145,25 +144,6 @@ func (f *SourceFile) FindGinInstance() {
 			logger.S.Info(logger.ColorLightGreen(string(f.Content[node.Pos()-1 : node.End()-1])))
 		}
 
-		// switch x := callExpr.Args[0].(type) {
-		// case *ast.BasicLit:
-		// 	log.Println("Literal Argument:", x.Value)
-		// 	f.boxes = append(f.boxes, Box{x.Value})
-
-		// case *ast.Ident:
-		// 	log.Printf("Argument Identifier: %+v", x)
-		// 	val, ok := f.decls[x.Name]
-		// 	if !ok {
-		// 		//TODO: Add ERRORs list to file type and return after iteration!
-		// 		log.Printf("Could not find identifier[%s] in decls map\n", x.Name)
-		// 		return true
-		// 	}
-		// 	f.boxes = append(f.boxes, Box{val})
-
-		// default:
-		// 	fmt.Println("Unsupported argument to rice.(must)FindBox():", x)
-		// }
-
 		return true
 	})
 }
@@ -187,24 +167,26 @@ func (w walker) Visit(node ast.Node) ast.Visitor {
 
 // exports
 // =======
-type Box struct {
-	name string
-}
 
-func FindRiceBoxes(filename string, src []byte) error {
-	fset := token.NewFileSet()
-	astFile, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
-	if err != nil {
-		return err
+func (f *SourceFile) EnumerateGinHandles() {
+	if len(f.GinIdents) == 0 {
+		return
 	}
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		callExpr, callExprOK := n.(*ast.CallExpr)
+		switch {
+		case callExprOK:
+			logger.S.Infof("%#v", callExpr)
 
-	f := &SourceFile{FileSet: fset, AstFile: astFile, Content: src}
-	f.Decls = make(map[string]string)
-	f.find()
-	return nil
-
+		}
+		return true
+	})
 }
-func (f *SourceFile) EnumerateStruct() {
+
+func (f *SourceFile) EnumerateStructAndGinVars() {
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
 		if n == nil {
 			return true
@@ -213,7 +195,46 @@ func (f *SourceFile) EnumerateStruct() {
 		_ = nodeIndex
 		structType, structTypeOK := n.(*ast.StructType)
 		typeSpec, typeSpecOK := n.(*ast.TypeSpec)
+		callExpr, callExprOK := n.(*ast.CallExpr)
+		ident, identOK := n.(*ast.Ident)
 		switch {
+		case identOK:
+			if ident.Obj != nil {
+				if ident.Obj.Kind == ast.Var {
+					if assignStmt, assignStmtOK := ident.Obj.Decl.(*ast.AssignStmt); assignStmtOK {
+						if len(assignStmt.Rhs) != 0 {
+							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
+								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
+									if equalSelectorExpr(selectorExpr, "gin", "Default") {
+										f.GinIdents = append(f.GinIdents, ident)
+									}
+								}
+
+							}
+						}
+					}
+
+				}
+			}
+
+		case callExprOK:
+			_ = callExpr
+			// if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
+			// 	switch selectorExpr.Sel.Name {
+			// 	case `GET`, `POST`, `PUT`, `PATCH`, `DELETE`:
+			// 		logger.S.Infof("callExpr %#v", callExpr)
+			// 		logger.S.Infof("callExpr.Fun %#v", callExpr.Fun)
+			// 		logger.S.Infof("callExpr.selectorExpr %#v", selectorExpr)
+			// 		logger.S.Infof("callExpr.selectorExpr.X %#v", selectorExpr.X)
+			// 		logger.S.Infof("callExpr.selectorExpr.Sel %#v", selectorExpr.Sel)
+
+			// 		if iden, idenOK := selectorExpr.X.(*ast.Ident); idenOK {
+			// 			logger.S.Infof("callExpr.selectorExpr.X.Obj %#v", iden.Obj)
+			// 			logger.S.Infof("callExpr.selectorExpr.X.Obj.Name %#v", iden.Name)
+
+			// 		}
+			// 	}
+			// }
 		case typeSpecOK:
 			typePos := -1
 			if typeSpec.Type.Pos().IsValid() {
