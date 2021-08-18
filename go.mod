@@ -6,6 +6,8 @@ require (
 	github.com/Masterminds/squirrel v1.4.0 // indirect
 	github.com/adam-hanna/arrayOperations v0.2.6 // indirect
 	github.com/antonfisher/nested-logrus-formatter v1.3.0
+	github.com/getkin/kin-openapi v0.74.0
+	github.com/go-openapi/spec v0.20.3
 	github.com/jiaxinwang/common v0.0.2-0.20210730094054-0e7b269153e8
 	github.com/jiaxinwang/err2 v0.6.2-0.20210621060754-758eb63a17f7
 	github.com/jinzhu/gorm v1.9.14 // indirect

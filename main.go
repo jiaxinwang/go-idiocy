@@ -1,50 +1,18 @@
 package main
 
 import (
-	"context"
-	"fmt"
+	"encoding/json"
 	"go/ast"
 	"idiocy/logger"
 	"idiocy/schema"
 	"os"
-	"path"
-	"runtime"
-	"strings"
 
-	"github.com/sirupsen/logrus"
-
-	nested "github.com/antonfisher/nested-logrus-formatter"
-
+	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/go-openapi/spec"
 	"github.com/urfave/cli/v2"
 )
 
-// Foo 结构体
-type Foo struct {
-	i int
-}
-
-// Bar 接口
-type Bar interface {
-	Do(ctx context.Context) error
-}
-
 func init() {
-	logrus.SetFormatter(&nested.Formatter{
-		TrimMessages:    true,
-		TimestampFormat: "15:04:05",
-		NoFieldsSpace:   true,
-		HideKeys:        false,
-		ShowFullLevel:   true,
-		CallerFirst:     false,
-		FieldsOrder:     []string{"component", "category"},
-		CustomCallerFormatter: func(f *runtime.Frame) string {
-			s := strings.Split(f.Function, ".")
-			funcName := s[len(s)-1]
-			return fmt.Sprintf(" [%s:%d][%s()]", path.Base(f.File), f.Line, funcName)
-		},
-	})
-	logrus.SetReportCaller(true)
-	logrus.SetLevel(logrus.TraceLevel)
 }
 
 func main() {
@@ -103,8 +71,37 @@ func run(c *cli.Context) error {
 
 	for _, v := range schema.APIs {
 		logger.S.Infof("%#v", v)
-
 	}
+
+	schema, _ := spec.Swagger20Schema()
+	schema.Title = "major-tom API"
+	schema.ID = `http://swagger.io/v2/schema.json#`
+	logger.S.Infof("%#v", schema.SwaggerSchemaProps)
+
+	doc := openapi2.T{}
+	doc.BasePath = "http://127.0.0.1:51414"
+
+	doc.Paths = make(map[string]*openapi2.PathItem)
+
+	doc.Paths[`/health`] = &openapi2.PathItem{
+		Get: &openapi2.Operation{
+			Parameters: openapi2.Parameters{
+				&openapi2.Parameter{
+					Name:     "foo",
+					Required: true,
+				},
+			},
+		},
+		Parameters: openapi2.Parameters{
+			&openapi2.Parameter{
+				Name:     "hahaha",
+				Required: true,
+			},
+		},
+	}
+
+	contentJSON, _ := json.Marshal(doc)
+	logger.S.Info(string(contentJSON))
 
 	return nil
 }
