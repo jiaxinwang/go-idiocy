@@ -226,25 +226,18 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 		case identOK:
 			if ident.Obj != nil {
 				if ident.Obj.Kind == ast.Var {
-					// if ident.Name == "r" {
-					// 	logger.S.Info("---------")
-					// 	logger.S.Infof("%#v", ident)
-					// 	logger.S.Infof("%#v", ident.Obj)
-					// 	f.PrintNode(nodeIndex - 1)
-					// 	f.PrintNode(nodeIndex)
-					// 	f.PrintNode(nodeIndex + 1)
-					// }
 					if assignStmt, assignStmtOK := ident.Obj.Decl.(*ast.AssignStmt); assignStmtOK {
 						if len(assignStmt.Rhs) != 0 {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
-										logger.S.Info("---------")
-										logger.S.Infof("%#v", callExpr)
-										logger.S.Infof("%#v", selectorExpr)
-										f.PrintNode(nodeIndex - 1)
-										f.PrintNode(nodeIndex)
-										f.PrintNode(nodeIndex + 1)
+										// logger.S.Info("---------")
+										// logger.S.Infof("%#v", callExpr)
+										// logger.S.Infof("%#v", selectorExpr)
+
+										// f.PrintNode(nodeIndex - 1)
+										// f.PrintNode(nodeIndex)
+										// f.PrintNode(nodeIndex + 1)
 
 										newGinIdent := NewGinIdentifier()
 										newGinIdent.Source = f
@@ -256,6 +249,28 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 											existGinIndent = ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
 										}
 										existGinIndent.AddCall(callExpr)
+										// detect callSel node
+										callSel := f.fullStacks[nodeIndex-1]
+										logger.S.Infof("call %#v", callSel)
+										if nextSel, ok := callSel.(*ast.SelectorExpr); ok {
+											// logger.S.Info("---------")
+											nx, nsel, _ := extractSelectorExpr(nextSel)
+											_ = nx
+											switch nsel.Name {
+											case "GET", "POST", "PUT", "PATCH", "DELETE":
+												logger.S.Info("---------")
+												routePathNode := f.fullStacks[nodeIndex+2]
+												routePath := ""
+												if basicLit, basicLitOK := routePathNode.(*ast.BasicLit); basicLitOK {
+													routePath = basicLit.Value
+												}
+												logger.S.Infof("routePathNode %#v", routePathNode)
+												route := GinRoute{
+													f, nsel.Name, routePath, &n,
+												}
+												ProjSchema.GinRoute = append(ProjSchema.GinRoute, &route)
+											}
+										}
 
 									}
 								}

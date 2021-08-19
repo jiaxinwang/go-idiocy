@@ -28,6 +28,7 @@ type Schema struct {
 	cacheStore     *sync.Map
 	SourceFile     []SourceFile
 	GinIdentifiers []*GinIdentifier
+	GinRoute       []*GinRoute
 }
 
 func NewSchema(modFilePath string) *Schema {
@@ -38,6 +39,7 @@ func NewSchema(modFilePath string) *Schema {
 
 	ret := new(Schema)
 	ret.GinIdentifiers = make([]*GinIdentifier, 0)
+	ret.GinRoute = make([]*GinRoute, 0)
 	err2.Try(ret.ParseModules(modFilePath))
 
 	return ret

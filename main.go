@@ -73,6 +73,10 @@ func run(c *cli.Context) error {
 	}
 	logger.S.Info(len(schema.ProjSchema.GinIdentifiers[0].Calls))
 
+	for _, v := range schema.ProjSchema.GinRoute {
+		logger.S.Infof("(%s)%s --> %v", v.Method, v.Path, v.Node)
+	}
+
 	for _, v := range schema.ProjSchema.SourceFile {
 		v.ParseFile()
 		v.EnumerateGinHandles()
