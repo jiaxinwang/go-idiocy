@@ -239,21 +239,24 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
-										// logger.S.Info("---------")
-										// logger.S.Infof("%#v", callExpr)
-										// logger.S.Infof("%#v", selectorExpr)
-										ginIdent := NewGinIdentifier()
-										ginIdent.Source = f
-										ginIdent.Node = ident
-										gIndet := ProjSchema.GinIdentifierWithFileIdent(f, ident)
-										if gIndet == nil {
-											ProjSchema.AddGinIdentifier(f, ginIdent)
-										}
-										ginIdent.AddCall(callExpr)
+										logger.S.Info("---------")
+										logger.S.Infof("%#v", callExpr)
+										logger.S.Infof("%#v", selectorExpr)
+										f.PrintNode(nodeIndex - 1)
+										f.PrintNode(nodeIndex)
+										f.PrintNode(nodeIndex + 1)
 
-										// f.PrintNode(nodeIndex - 1)
-										// f.PrintNode(nodeIndex)
-										// f.PrintNode(nodeIndex + 1)
+										newGinIdent := NewGinIdentifier()
+										newGinIdent.Source = f
+										newGinIdent.Node = ident
+										newGinIdent.InstancingCall = callExpr
+										existGinIndent := ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
+										if existGinIndent == nil {
+											ProjSchema.AddGinIdentifier(f, newGinIdent)
+											existGinIndent = ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
+										}
+										existGinIndent.AddCall(callExpr)
+
 									}
 								}
 							}

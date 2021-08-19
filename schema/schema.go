@@ -67,7 +67,7 @@ func (schema *Schema) LoadSourceFiles() (err error) {
 			}
 		} else {
 			if strings.EqualFold(filepath.Ext(filename), ".go") {
-				logger.S.Debug(filename)
+				// logger.S.Debug(filename)
 				schema.SourceFile = append(schema.SourceFile, SourceFile{FullPath: filename, Path: filepath.Dir(filename)})
 			}
 		}
@@ -76,8 +76,8 @@ func (schema *Schema) LoadSourceFiles() (err error) {
 	return nil
 }
 
-func (s *Schema) GinIdentifierWithFileIdent(source *SourceFile, ident *ast.Ident) *GinIdentifier {
-	another := GinIdentifier{Source: source, Node: ident}
+func (s *Schema) GinIdentifierWithFileIdent(source *SourceFile, callExpr *ast.CallExpr) *GinIdentifier {
+	another := GinIdentifier{Source: source, InstancingCall: callExpr}
 	for _, v := range s.GinIdentifiers {
 		if v.Equal(&another) {
 			return v
