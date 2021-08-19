@@ -6,6 +6,7 @@ import (
 	"idiocy/logger"
 	"idiocy/platform"
 	"log"
+	"strings"
 )
 
 func (f *SourceFile) walk(fn func(ast.Node) bool) {
@@ -251,24 +252,38 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 										existGinIndent.AddCall(callExpr)
 										// detect callSel node
 										callSel := f.fullStacks[nodeIndex-1]
-										logger.S.Infof("call %#v", callSel)
+										// logger.S.Infof("call %#v", callSel)
 										if nextSel, ok := callSel.(*ast.SelectorExpr); ok {
 											// logger.S.Info("---------")
 											nx, nsel, _ := extractSelectorExpr(nextSel)
 											_ = nx
 											switch nsel.Name {
 											case "GET", "POST", "PUT", "PATCH", "DELETE":
-												logger.S.Info("---------")
 												routePathNode := f.fullStacks[nodeIndex+2]
 												routePath := ""
 												if basicLit, basicLitOK := routePathNode.(*ast.BasicLit); basicLitOK {
 													routePath = basicLit.Value
 												}
-												logger.S.Infof("routePathNode %#v", routePathNode)
+												// logger.S.Infof("routePathNode %#v", routePathNode)
+												if strings.Contains(routePath, "swagger") {
+													return true
+												}
+												logger.S.Info("---------")
 												route := GinRoute{
 													f, nsel.Name, routePath, &n,
 												}
 												ProjSchema.GinRoute = append(ProjSchema.GinRoute, &route)
+
+												// handle
+												handlePathNode := f.fullStacks[nodeIndex+3]
+												logger.S.Infof("handlePathNode %#v", handlePathNode)
+
+												// anoymouse
+
+												if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
+													logger.S.Infof("funcLit %#v", funcLit)
+												}
+
 											}
 										}
 
