@@ -170,7 +170,6 @@ func (f *SourceFile) EnumerateGinHandles() {
 		case callExprOK:
 			if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 				_ = selectorExpr
-
 				if x, sel, ok := extractSelectorExpr(callExpr.Fun.(*ast.SelectorExpr)); ok {
 					switch sel.Name {
 					case "GET", "PUT", "PATH", "POST", "DELETE":
@@ -203,6 +202,7 @@ func (f *SourceFile) EnumerateGinHandles() {
 }
 
 func (f *SourceFile) EnumerateStructAndGinVars() {
+
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
 		if n == nil {
 			return true
@@ -213,19 +213,46 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 		typeSpec, typeSpecOK := n.(*ast.TypeSpec)
 		callExpr, callExprOK := n.(*ast.CallExpr)
 		ident, identOK := n.(*ast.Ident)
+		decl, declOK := n.(*ast.DeclStmt)
+		_ = decl
+
 		switch {
+		case declOK:
+			// logger.S.Info("---------")
+			// logger.S.Infof("%#v", decl)
+			// logger.S.Infof("%#v", decl.Decl)
+			// f.PrintNode(nodeIndex - 1)
+			// f.PrintNode(nodeIndex)
+			// f.PrintNode(nodeIndex + 1)
 		case identOK:
 			if ident.Obj != nil {
 				if ident.Obj.Kind == ast.Var {
+					// if ident.Name == "r" {
+					// 	logger.S.Info("---------")
+					// 	logger.S.Infof("%#v", ident)
+					// 	logger.S.Infof("%#v", ident.Obj)
+					// 	f.PrintNode(nodeIndex - 1)
+					// 	f.PrintNode(nodeIndex)
+					// 	f.PrintNode(nodeIndex + 1)
+					// }
 					if assignStmt, assignStmtOK := ident.Obj.Decl.(*ast.AssignStmt); assignStmtOK {
 						if len(assignStmt.Rhs) != 0 {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
-										f.GinIdents = append(f.GinIdents, ident)
+										logger.S.Info("---------")
+										logger.S.Infof("%#v", callExpr)
+										logger.S.Infof("%#v", selectorExpr)
+										ginIdent := NewGinIdentifier()
+										ginIdent.Node = ident
+										ProjSchema.AddGinIdentifier(f, ginIdent)
+										ginIdent.AddCall(callExpr)
+
+										f.PrintNode(nodeIndex - 1)
+										f.PrintNode(nodeIndex)
+										// f.PrintNode(nodeIndex + 1)
 									}
 								}
-
 							}
 						}
 					}

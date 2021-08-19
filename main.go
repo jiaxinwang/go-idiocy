@@ -6,9 +6,10 @@ import (
 	"idiocy/logger"
 	"idiocy/schema"
 	"os"
+	"path"
 
 	"github.com/getkin/kin-openapi/openapi2"
-	"github.com/go-openapi/spec"
+	"github.com/jiaxinwang/common/fs"
 	"github.com/urfave/cli/v2"
 )
 
@@ -53,18 +54,21 @@ var genDoc = cli.Command{
 }
 
 func run(c *cli.Context) error {
-	projSchema := schema.NewSchema(c.String("dir"))
-	projSchema.LoadSourceFiles()
+	schema.ProjSchema = schema.NewSchema(c.String("dir"))
+	schema.ProjSchema.LoadSourceFiles()
 
-	for _, v := range projSchema.SourceFile {
+	for _, v := range schema.ProjSchema.SourceFile {
 		v.GinIdents = make([]*ast.Ident, 0)
+		v.GinIdentifiers = make([]*schema.GinIdentifier, 0)
 		v.ParseFile()
 		v.BuildStacks()
 		v.EnumerateStructAndGinVars()
-		v.EnumerateGinHandles()
+
+		logger.S.Info("---> ", len(v.GinIdentifiers))
+		// v.EnumerateGinHandles()
 	}
 
-	for _, v := range projSchema.SourceFile {
+	for _, v := range schema.ProjSchema.SourceFile {
 		v.ParseFile()
 		v.EnumerateGinHandles()
 	}
@@ -73,13 +77,9 @@ func run(c *cli.Context) error {
 		logger.S.Infof("%#v", v)
 	}
 
-	schema, _ := spec.Swagger20Schema()
-	schema.Title = "major-tom API"
-	schema.ID = `http://swagger.io/v2/schema.json#`
-	logger.S.Infof("%#v", schema.SwaggerSchemaProps)
-
 	doc := openapi2.T{}
-	doc.BasePath = "http://127.0.0.1:51414"
+	doc.Swagger = "2.0"
+	doc.BasePath = `/`
 
 	doc.Paths = make(map[string]*openapi2.PathItem)
 
@@ -88,20 +88,26 @@ func run(c *cli.Context) error {
 			Parameters: openapi2.Parameters{
 				&openapi2.Parameter{
 					Name:     "foo",
+					In:       "query",
 					Required: true,
 				},
+			},
+			Responses: map[string]*openapi2.Response{
+				"200": {Description: "health"},
 			},
 		},
 		Parameters: openapi2.Parameters{
 			&openapi2.Parameter{
 				Name:     "hahaha",
+				In:       "query",
 				Required: true,
 			},
 		},
 	}
 
 	contentJSON, _ := json.Marshal(doc)
-	logger.S.Info(string(contentJSON))
-
+	// logger.S.Info(string(contentJSON))
+	swaggerDocFilepath := path.Join(path.Dir(c.String("dir")), `idiocy`, `swagger.json`)
+	fs.Save(contentJSON, swaggerDocFilepath)
 	return nil
 }

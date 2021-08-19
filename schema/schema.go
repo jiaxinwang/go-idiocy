@@ -19,11 +19,14 @@ func init() {
 	APIs = make([]API, 0)
 }
 
+var ProjSchema *Schema
+
 type Schema struct {
 	ModuleFilePath string
 	ModulePath     string
 	cacheStore     *sync.Map
 	SourceFile     []SourceFile
+	GinIdentifiers []*GinIdentifier
 }
 
 func NewSchema(modFilePath string) *Schema {
@@ -68,4 +71,14 @@ func (schema *Schema) LoadSourceFiles() (err error) {
 		return nil
 	})
 	return nil
+}
+
+func (s *Schema) AddGinIdentifier(source *SourceFile, ident *GinIdentifier) bool {
+	for _, v := range s.GinIdentifiers {
+		if ident.Equal(v) {
+			return false
+		}
+	}
+	s.GinIdentifiers = append(s.GinIdentifiers, ident)
+	return true
 }
