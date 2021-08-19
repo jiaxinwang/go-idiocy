@@ -15,6 +15,9 @@ func NewGinIdentifier() *GinIdentifier {
 }
 
 func (g *GinIdentifier) Equal(another *GinIdentifier) bool {
+	if !g.Source.Equal(another.Source) {
+		return false
+	}
 	if g.Node.Pos() != another.Node.Pos() {
 		return false
 	}

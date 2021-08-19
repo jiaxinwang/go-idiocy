@@ -14,7 +14,7 @@ func (f *SourceFile) walk(fn func(ast.Node) bool) {
 
 func (f *SourceFile) find() {
 	f.BuildStacks()
-	f.FindDecals()
+	// f.FindDecals()
 	f.FindGinInstance()
 }
 
@@ -202,7 +202,6 @@ func (f *SourceFile) EnumerateGinHandles() {
 }
 
 func (f *SourceFile) EnumerateStructAndGinVars() {
-
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
 		if n == nil {
 			return true
@@ -240,16 +239,19 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
-										logger.S.Info("---------")
-										logger.S.Infof("%#v", callExpr)
-										logger.S.Infof("%#v", selectorExpr)
+										// logger.S.Info("---------")
+										// logger.S.Infof("%#v", callExpr)
+										// logger.S.Infof("%#v", selectorExpr)
 										ginIdent := NewGinIdentifier()
 										ginIdent.Node = ident
-										ProjSchema.AddGinIdentifier(f, ginIdent)
+										gIndet := ProjSchema.GinIdentifierWithFileIdent(f, ident)
+										if gIndet == nil {
+											ProjSchema.AddGinIdentifier(f, ginIdent)
+										}
 										ginIdent.AddCall(callExpr)
 
-										f.PrintNode(nodeIndex - 1)
-										f.PrintNode(nodeIndex)
+										// f.PrintNode(nodeIndex - 1)
+										// f.PrintNode(nodeIndex)
 										// f.PrintNode(nodeIndex + 1)
 									}
 								}

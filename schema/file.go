@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"strings"
 
 	"github.com/jiaxinwang/common/fs"
 	"github.com/jiaxinwang/err2"
@@ -28,6 +29,10 @@ type SourceFile struct {
 	fullStacks     []ast.Node
 	GinIdents      []*ast.Ident
 	GinIdentifiers []*GinIdentifier
+}
+
+func (f *SourceFile) Equal(another *SourceFile) bool {
+	return strings.EqualFold(f.FullPath, another.FullPath)
 }
 
 func (f *SourceFile) ParseFile() error {

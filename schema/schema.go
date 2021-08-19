@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"go/ast"
 	"idiocy/logger"
 	"io/ioutil"
 	"os"
@@ -70,6 +71,16 @@ func (schema *Schema) LoadSourceFiles() (err error) {
 		}
 		return nil
 	})
+	return nil
+}
+
+func (s *Schema) GinIdentifierWithFileIdent(source *SourceFile, ident *ast.Ident) *GinIdentifier {
+	another := GinIdentifier{Source: source, Node: ident}
+	for _, v := range s.GinIdentifiers {
+		if v.Equal(&another) {
+			return v
+		}
+	}
 	return nil
 }
 
