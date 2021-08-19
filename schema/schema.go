@@ -37,7 +37,9 @@ func NewSchema(modFilePath string) *Schema {
 	})
 
 	ret := new(Schema)
+	ret.GinIdentifiers = make([]*GinIdentifier, 0)
 	err2.Try(ret.ParseModules(modFilePath))
+
 	return ret
 }
 

@@ -59,14 +59,14 @@ func run(c *cli.Context) error {
 
 	for _, v := range schema.ProjSchema.SourceFile {
 		v.GinIdents = make([]*ast.Ident, 0)
-		v.GinIdentifiers = make([]*schema.GinIdentifier, 0)
 		v.ParseFile()
 		v.BuildStacks()
 		v.EnumerateStructAndGinVars()
 
-		logger.S.Info("---> ", len(v.GinIdentifiers))
 		// v.EnumerateGinHandles()
 	}
+
+	logger.S.Info("---> ", len(schema.ProjSchema.GinIdentifiers))
 
 	for _, v := range schema.ProjSchema.SourceFile {
 		v.ParseFile()

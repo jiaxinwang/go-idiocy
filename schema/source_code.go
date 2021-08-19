@@ -243,6 +243,7 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 										// logger.S.Infof("%#v", callExpr)
 										// logger.S.Infof("%#v", selectorExpr)
 										ginIdent := NewGinIdentifier()
+										ginIdent.Source = f
 										ginIdent.Node = ident
 										gIndet := ProjSchema.GinIdentifierWithFileIdent(f, ident)
 										if gIndet == nil {
