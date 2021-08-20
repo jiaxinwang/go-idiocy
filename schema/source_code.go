@@ -1,13 +1,18 @@
 package schema
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
+	"idiocy/apitmpl"
 	"idiocy/helper"
 	"idiocy/logger"
 	"idiocy/platform"
 	"log"
 	"strings"
+
+	"github.com/fatih/structtag"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 func (f *SourceFile) walk(fn func(ast.Node) bool) {
@@ -328,7 +333,7 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 												if strings.Contains(routePath, "swagger") {
 													return true
 												}
-												logger.S.Info("---------")
+												// logger.S.Info("---------")
 												route := GinRoute{
 													f, nsel.Name, routePath, &n,
 												}
@@ -336,18 +341,19 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 
 												// handle
 												handlePathNode := f.fullStacks[nodeIndex+3]
-												logger.S.Infof("%s handlePathNode %#v", routePath, handlePathNode)
+												// logger.S.Infof("%s handlePathNode %#v", routePath, handlePathNode)
 
 												// anoymouse
 												if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
-													logger.S.Infof("%s funcLit %#v", routePath, funcLit)
+													// logger.S.Infof("%s funcLit %#v", routePath, funcLit)
 													body := funcLit.Body
-													logger.S.Infof("%s funcLit.body %#v", routePath, body)
+													// logger.S.Infof("%s funcLit.body %#v", routePath, body)
 													f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
 													for _, v := range body.List {
 														//ast.DeclStmt
 														if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
-															logger.S.Infof("%s funcLit.body.declStmt %#v", routePath, declStmt)
+															_ = declStmt
+															// logger.S.Infof("%s funcLit.body.declStmt %#v", routePath, declStmt)
 														}
 													}
 												} else {
@@ -395,6 +401,60 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 
 		case structTypeOK:
 			_ = structType
+			pNode := f.fullStacks[nodeIndex-1]
+
+			var name string
+
+			name, _, _ = helper.ExtractIdent(pNode)
+
+			doc := apitmpl.Doc
+			def := openapi3.SchemaRef{}
+			def.Value = openapi3.NewArraySchema()
+			def.Value.Type = "object"
+			def.Value.Properties = openapi3.Schemas{}
+
+			for _, v := range structType.Fields.List {
+				typeDesc, _, _ := helper.ExtractIdent(v.Type)
+
+				switch typeDesc {
+				case "int", "uint", "string", "bool":
+				default:
+					typeDesc = "string"
+
+				}
+
+				propName := ""
+				if len(v.Names) > 0 {
+					propName = v.Names[0].Name
+				}
+
+				if v.Tag != nil {
+					vv := strings.TrimPrefix(v.Tag.Value, "`")
+					vv = strings.TrimSuffix(vv, "`")
+					if tags, err := structtag.Parse(vv); err == nil {
+						if jsonTag, err := tags.Get("json"); err == nil {
+							_ = jsonTag
+							if strings.EqualFold(jsonTag.String(), "-") {
+								propName = ""
+							}
+						} else {
+							logger.S.Warn(err)
+						}
+					}
+				}
+				if !strings.EqualFold(propName, "") {
+					ref := openapi3.NewStringSchema().NewRef()
+					ref.Value.Type = typeDesc
+					ref.Value.Description = fmt.Sprintf("TODO: 缺少 %s 的描述", propName)
+					def.Value.Properties[propName] = ref
+				}
+
+			}
+
+			if !strings.EqualFold(name, "") {
+				doc.Definitions[name] = &def
+			}
+
 			sentry := false
 			for _, v := range Structs {
 				if v.FullPath == f.FullPath && v.TypePos == int(structType.Pos()) {

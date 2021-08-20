@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"go/ast"
+	"idiocy/apitmpl"
 	"idiocy/logger"
 	"idiocy/schema"
 	"os"
@@ -61,13 +62,18 @@ func run(c *cli.Context) error {
 		v.GinIdents = make([]*ast.Ident, 0)
 		v.ParseFile()
 		v.BuildStacks()
-		v.EnumerateStructAndGinVars()
 
+		// work
+		v.EnumerateStructAndGinVars()
 		// v.EnumerateGinHandles()
+
 	}
 
-	logger.S.Info("---> ", len(schema.ProjSchema.GinIdentifiers))
+	// for _, v := range schema.Structs {
+	// 	logger.S.Infof("%#v", v)
+	// }
 
+	logger.S.Info("---> ", len(schema.ProjSchema.GinIdentifiers))
 	for _, v := range schema.ProjSchema.GinIdentifiers {
 		logger.S.Infof("%#v", v.Node)
 	}
@@ -86,9 +92,9 @@ func run(c *cli.Context) error {
 		logger.S.Infof("%#v", v)
 	}
 
-	doc := openapi2.T{}
-	doc.Swagger = "2.0"
-	doc.BasePath = `/`
+	doc := apitmpl.Doc
+	// doc.Swagger = "2.0"
+	// doc.BasePath = `/`
 
 	doc.Paths = make(map[string]*openapi2.PathItem)
 
@@ -98,6 +104,7 @@ func run(c *cli.Context) error {
 				&openapi2.Parameter{
 					Name:     "foo",
 					In:       "query",
+					Type:     "string",
 					Required: true,
 				},
 			},
@@ -108,6 +115,7 @@ func run(c *cli.Context) error {
 		Parameters: openapi2.Parameters{
 			&openapi2.Parameter{
 				Name:     "hahaha",
+				Type:     "string",
 				In:       "query",
 				Required: true,
 			},
