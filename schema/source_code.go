@@ -434,8 +434,10 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 					if tags, err := structtag.Parse(vv); err == nil {
 						if jsonTag, err := tags.Get("json"); err == nil {
 							_ = jsonTag
-							if strings.EqualFold(jsonTag.String(), "-") {
+							if strings.EqualFold(jsonTag.Name, "-") {
 								propName = ""
+							} else {
+								propName = jsonTag.Name
 							}
 						} else {
 							logger.S.Warn(err)
