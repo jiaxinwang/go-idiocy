@@ -243,14 +243,8 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
 
 		switch sel.Name {
 		case "JSON":
-			logger.S.Info("------")
-			f.PrintNode(nodeIndex)
-			logger.S.Infof("%#v", n)
-			logger.S.Infof("args %#v", args)
-			for _, v := range args {
-				logger.S.Infof("arg %#v", v)
-			}
 			statusCode := ""
+			responseTypeName := ""
 			if len(args) >= 1 {
 				if _, value, ok := helper.ExtractBasicLit(ast.Node(args[0])); ok {
 					statusCode = value
@@ -258,11 +252,10 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
 			}
 			if len(args) >= 2 {
 				if _, object, ok := helper.ExtractIdent(ast.Node(args[1])); ok {
-					logger.S.Infof("object=(%#v)", object)
+					responseTypeName = helper.ExtractObjectTypeName(object)
 				}
 			}
-			//ExtractIdent
-			logger.S.Infof("args statuCode %s", statusCode)
+			logger.S.Infof("args statuCode %s response %s", statusCode, responseTypeName)
 		}
 
 		return true

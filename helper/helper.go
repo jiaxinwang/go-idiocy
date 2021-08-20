@@ -1,7 +1,9 @@
 package helper
 
 import (
+	"fmt"
 	"go/ast"
+	"idiocy/logger"
 )
 
 //
@@ -50,4 +52,35 @@ func ExtractIdent(node ast.Node) (name string, object *ast.Object, ok bool) {
 		return ident.Name, ident.Obj, true
 	}
 	return "", nil, false
+}
+
+func ExtractValueSpec(node ast.Node) (
+	doc *ast.CommentGroup,
+	names []*ast.Ident,
+	typeNode *ast.Expr,
+	values []ast.Expr,
+	comment *ast.CommentGroup,
+	ok bool) {
+	valueSpec, valueSpecOK := node.(*ast.ValueSpec)
+	if valueSpecOK {
+		return valueSpec.Doc, valueSpec.Names, &valueSpec.Type, valueSpec.Values, valueSpec.Comment, true
+	}
+	return nil, []*ast.Ident{}, nil, []ast.Expr{}, nil, false
+}
+
+func ExplainObjectType(node ast.SelectorExpr) {
+	logger.S.Infof("type %#v", node)
+}
+
+func ExtractObjectTypeName(object *ast.Object) (fullname string) {
+	pkg, name := "", ""
+	if ts, tsOK := object.Decl.(*ast.ValueSpec); tsOK {
+		if _, _, typeNode, _, _, ok := ExtractValueSpec(ts); ok {
+			typeNodeSelectorExpr, _ := ts.Type.(*ast.SelectorExpr)
+			pkg, _, _ = ExtractIdent(typeNodeSelectorExpr.X)
+			_, sel, _ := ExtractSelectorExpr(*typeNode)
+			name = sel.Name
+		}
+	}
+	return fmt.Sprintf("%s.%s", pkg, name)
 }
