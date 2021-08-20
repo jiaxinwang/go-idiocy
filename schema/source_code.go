@@ -3,6 +3,7 @@ package schema
 import (
 	"go/ast"
 	"go/token"
+	"idiocy/helper"
 	"idiocy/logger"
 	"idiocy/platform"
 	"log"
@@ -202,6 +203,72 @@ func (f *SourceFile) EnumerateGinHandles() {
 	})
 }
 
+func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		from, to := 0, 0
+		if n.Pos().IsValid() {
+			from = int(n.Pos())
+			if from < Lbrace {
+				return true
+			}
+		}
+
+		if n.End().IsValid() {
+			to = int(n.End())
+			if to >= Rbrace {
+				return true
+			}
+		}
+
+		// logger.S.Infow("within", "Lbrace", Lbrace, "from", from, "Rbrace", Rbrace, "to", to)
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+		// f.PrintNode(nodeIndex)
+
+		// logger.S.Infof("%#v", n)
+
+		fun, args, ok := helper.ExtractCallExpr(n)
+		if !ok {
+			return true
+		}
+
+		x, sel, ok := helper.ExtractSelectorExpr(ast.Node(*fun))
+		_ = x
+		if !ok {
+			return true
+		}
+
+		switch sel.Name {
+		case "JSON":
+			logger.S.Info("------")
+			f.PrintNode(nodeIndex)
+			logger.S.Infof("%#v", n)
+			logger.S.Infof("args %#v", args)
+			for _, v := range args {
+				logger.S.Infof("arg %#v", v)
+			}
+			statusCode := ""
+			if len(args) >= 1 {
+				if _, value, ok := helper.ExtractBasicLit(ast.Node(args[0])); ok {
+					statusCode = value
+				}
+			}
+			if len(args) >= 2 {
+				if _, object, ok := helper.ExtractIdent(ast.Node(args[1])); ok {
+					logger.S.Infof("object=(%#v)", object)
+				}
+			}
+			//ExtractIdent
+			logger.S.Infof("args statuCode %s", statusCode)
+		}
+
+		return true
+	})
+}
+
 func (f *SourceFile) EnumerateStructAndGinVars() {
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
 		if n == nil {
@@ -276,12 +343,24 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 
 												// handle
 												handlePathNode := f.fullStacks[nodeIndex+3]
-												logger.S.Infof("handlePathNode %#v", handlePathNode)
+												logger.S.Infof("%s handlePathNode %#v", routePath, handlePathNode)
 
 												// anoymouse
-
 												if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
-													logger.S.Infof("funcLit %#v", funcLit)
+													logger.S.Infof("%s funcLit %#v", routePath, funcLit)
+													body := funcLit.Body
+													logger.S.Infof("%s funcLit.body %#v", routePath, body)
+													f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
+													for _, v := range body.List {
+														//ast.DeclStmt
+														if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
+															logger.S.Infof("%s funcLit.body.declStmt %#v", routePath, declStmt)
+														}
+													}
+												} else {
+													// no handle func
+													// add 200
+													//f.PrintNode(nodeIndex + 3)
 												}
 
 											}
