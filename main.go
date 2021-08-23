@@ -130,6 +130,18 @@ func run(c *cli.Context) error {
 			}
 		}
 
+		opt.Responses = make(map[string]*openapi2.Response)
+
+		for _, v := range v.APIResopnse {
+			parts := strings.Split(v.StructName, ".")
+			base := parts[len(parts)-1]
+			opt.Responses[v.Code] = &openapi2.Response{
+				Description: fmt.Sprintf("TODO: 缺少 %s 的描述", base),
+				Schema:      openapi3.NewSchemaRef(fmt.Sprintf("#/definitions/%s", base), nil),
+				// Ref:         fmt.Sprintf("#/definitions/%s", base),
+			}
+		}
+
 	}
 
 	// doc.Paths[`/health`] = &openapi2.PathItem{

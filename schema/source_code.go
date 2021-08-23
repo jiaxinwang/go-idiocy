@@ -258,7 +258,8 @@ func (f *SourceFile) EnumerateGinBind(Lbrace, Rbrace int) (paramName string) {
 	return
 }
 
-func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
+func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) (codes, structNames []string) {
+	codes, structNames = []string{}, []string{}
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
 		if n == nil {
 			return true
@@ -305,11 +306,14 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
 					responseTypeName = helper.ExtractObjectTypeName(object)
 				}
 			}
-			logger.S.Infof("args statuCode %s response %s", statusCode, responseTypeName)
+			// logger.S.Infof("args statuCode %s response %s", statusCode, responseTypeName)
+			codes = append(codes, statusCode)
+			structNames = append(structNames, responseTypeName)
 		}
 
 		return true
 	})
+	return
 }
 
 func (f *SourceFile) EnumerateStructAndGinVars() {
@@ -390,9 +394,15 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 													// logger.S.Infof("%s funcLit %#v", routePath, funcLit)
 													body := funcLit.Body
 													// logger.S.Infof("%s funcLit.body %#v", routePath, body)
-													f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
+													codes, respNames := f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
 
 													route.APIParam.StructName = f.EnumerateGinBind(int(body.Lbrace), int(body.Rbrace))
+													for i := 0; i < len(codes); i++ {
+														route.APIResopnse = append(route.APIResopnse, &APIResopnse{
+															Code:       codes[i],
+															StructName: respNames[i],
+														})
+													}
 													for _, v := range body.List {
 														//ast.DeclStmt
 														if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
@@ -478,10 +488,11 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 				typeDesc, _, _ := helper.ExtractIdent(v.Type)
 
 				switch typeDesc {
-				case "int", "uint", "string", "bool":
+				case "int", "uint":
+					typeDesc = "integer"
+				case "string", "bool":
 				default:
 					typeDesc = "string"
-
 				}
 
 				propName := ""

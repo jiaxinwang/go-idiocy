@@ -3,7 +3,8 @@ package schema
 import "go/ast"
 
 type APIResopnse struct {
-	Code string
+	Code       string
+	StructName string
 }
 
 type APIParam struct {
