@@ -80,13 +80,18 @@ func Analyse(dir string) {
 
 		opt.Responses = make(map[string]*openapi2.Response)
 
+		if len(v.APIResopnse) == 0 {
+			opt.Responses["200"] = &openapi2.Response{
+				Description: fmt.Sprintf("无返回 body"),
+			}
+		}
+
 		for _, v := range v.APIResopnse {
 			parts := strings.Split(v.StructName, ".")
 			base := parts[len(parts)-1]
 			opt.Responses[v.Code] = &openapi2.Response{
 				Description: fmt.Sprintf("TODO: 缺少 %s 的描述", base),
 				Schema:      openapi3.NewSchemaRef(fmt.Sprintf("#/definitions/%s", base), nil),
-				// Ref:         fmt.Sprintf("#/definitions/%s", base),
 			}
 		}
 
