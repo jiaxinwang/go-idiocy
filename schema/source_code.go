@@ -188,16 +188,16 @@ func (f *SourceFile) EnumerateGinHandles() {
 							logger.S.Infof("args %#v", callExpr.Args[1]) // func
 						}
 
-						p := ""
-						if bl, blOK := callExpr.Args[0].(*ast.BasicLit); blOK {
-							p = bl.Value
-						}
+						// p := ""
+						// if bl, blOK := callExpr.Args[0].(*ast.BasicLit); blOK {
+						// 	p = bl.Value
+						// }
 
-						APIs = append(APIs, API{
-							f,
-							p,
-							sel.Name,
-						})
+						// APIs = append(APIs, API{
+						// 	f,
+						// 	p,
+						// 	sel.Name,
+						// })
 
 					}
 				}
@@ -206,6 +206,56 @@ func (f *SourceFile) EnumerateGinHandles() {
 		}
 		return true
 	})
+}
+
+func (f *SourceFile) EnumerateGinBind(Lbrace, Rbrace int) (paramName string) {
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		from, to := 0, 0
+		if n.Pos().IsValid() {
+			from = int(n.Pos())
+			if from < Lbrace {
+				return true
+			}
+		}
+
+		if n.End().IsValid() {
+			to = int(n.End())
+			if to >= Rbrace {
+				return true
+			}
+		}
+
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+		fun, args, ok := helper.ExtractCallExpr(n)
+		_ = args
+		if !ok {
+			return true
+		}
+
+		x, sel, ok := helper.ExtractSelectorExpr(ast.Node(*fun))
+		_ = x
+		if !ok {
+			return true
+		}
+
+		switch sel.Name {
+		case "ShouldBind":
+			logger.S.Warn("hit")
+			nn := f.fullStacks[nodeIndex+6]
+			if _, obj, ok := helper.ExtractIdent(nn); ok {
+				fullname := helper.ExtractObjectTypeName(obj)
+				paramName = fullname
+				return false
+			}
+		}
+
+		return true
+	})
+	return
 }
 
 func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
@@ -228,13 +278,8 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) {
 			}
 		}
 
-		// logger.S.Infow("within", "Lbrace", Lbrace, "from", from, "Rbrace", Rbrace, "to", to)
 		nodeIndex := f.NodeIndex(n)
 		_ = nodeIndex
-		// f.PrintNode(nodeIndex)
-
-		// logger.S.Infof("%#v", n)
-
 		fun, args, ok := helper.ExtractCallExpr(n)
 		if !ok {
 			return true
@@ -297,14 +342,6 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
-										// logger.S.Info("---------")
-										// logger.S.Infof("%#v", callExpr)
-										// logger.S.Infof("%#v", selectorExpr)
-
-										// f.PrintNode(nodeIndex - 1)
-										// f.PrintNode(nodeIndex)
-										// f.PrintNode(nodeIndex + 1)
-
 										newGinIdent := NewGinIdentifier()
 										newGinIdent.Source = f
 										newGinIdent.Node = ident
@@ -334,10 +371,15 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 													return true
 												}
 												// logger.S.Info("---------")
-												route := GinRoute{
-													f, nsel.Name, routePath, &n,
+												route := GinAPI{
+													Source:   f,
+													Group:    "",
+													Method:   nsel.Name,
+													Path:     routePath,
+													Node:     &n,
+													APIParam: &APIParam{},
 												}
-												ProjSchema.GinRoute = append(ProjSchema.GinRoute, &route)
+												ProjSchema.GinAPIs = append(ProjSchema.GinAPIs, &route)
 
 												// handle
 												handlePathNode := f.fullStacks[nodeIndex+3]
@@ -349,6 +391,8 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 													body := funcLit.Body
 													// logger.S.Infof("%s funcLit.body %#v", routePath, body)
 													f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
+
+													route.APIParam.StructName = f.EnumerateGinBind(int(body.Lbrace), int(body.Rbrace))
 													for _, v := range body.List {
 														//ast.DeclStmt
 														if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
@@ -361,6 +405,23 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 													// add 200
 													//f.PrintNode(nodeIndex + 3)
 												}
+
+												// logger.S.Error("here")
+												// f.PrintNode(nodeIndex)
+												// f.PrintNode(nodeIndex + 1)
+												// f.PrintNode(nodeIndex + 2)
+												// f.PrintNode(nodeIndex + 3)
+												// f.PrintNode(nodeIndex + 4)
+												// f.PrintNode(nodeIndex + 5)
+
+												// nn := f.fullStacks[nodeIndex+3]
+												// if fl, ok := helper.ExtractFuncLit(nn); ok {
+												// 	logger.S.Infof("%#v", fl)
+												// 	logger.S.Infof("%#v", fl.Body)
+												// 	for _, v := range fl.Body.List {
+												// 		logger.S.Infof("%#v", v)
+												// 	}
+												// }
 
 											}
 										}
@@ -440,7 +501,7 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 								propName = jsonTag.Name
 							}
 						} else {
-							logger.S.Warn(err)
+							// logger.S.Warn(err)
 						}
 					}
 				}

@@ -10,12 +10,6 @@ import (
 	"github.com/jiaxinwang/err2"
 )
 
-type API struct {
-	SourceFile *SourceFile
-	Path       string
-	Method     string
-}
-
 type SourceFile struct {
 	FullPath   string
 	Path       string

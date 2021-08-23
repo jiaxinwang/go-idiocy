@@ -84,3 +84,11 @@ func ExtractObjectTypeName(object *ast.Object) (fullname string) {
 	}
 	return fmt.Sprintf("%s.%s", pkg, name)
 }
+
+func ExtractFuncLit(node ast.Node) (fl *ast.FuncLit, ok bool) {
+	if fl, flOK := node.(*ast.FuncLit); flOK {
+		_ = fl
+		return fl, flOK
+	}
+	return nil, false
+}
