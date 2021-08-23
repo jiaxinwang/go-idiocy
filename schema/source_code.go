@@ -258,6 +258,85 @@ func (f *SourceFile) EnumerateGinBind(Lbrace, Rbrace int) (paramName string) {
 	return
 }
 
+func (f *SourceFile) EnumerateGinRoute(groupRoute string, Lbrace, Rbrace int) {
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		from, to := 0, 0
+		if n.Pos().IsValid() {
+			from = int(n.Pos())
+			if from < Lbrace {
+				return true
+			}
+		}
+
+		if n.End().IsValid() {
+			to = int(n.End())
+			if to >= Rbrace {
+				return true
+			}
+		}
+
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+
+		if nextSel, ok := n.(*ast.SelectorExpr); ok {
+			nx, nsel, _ := extractSelectorExpr(nextSel)
+			_ = nx
+			switch nsel.Name {
+			case "GET", "POST", "PUT", "PATCH", "DELETE":
+				logger.S.Warn("here")
+				routePathNode := f.fullStacks[nodeIndex+3]
+				f.PrintNode(nodeIndex + 3)
+				routePath := ""
+				if basicLit, basicLitOK := routePathNode.(*ast.BasicLit); basicLitOK {
+					logger.L.Error(groupRoute)
+					if strings.EqualFold(groupRoute, "") {
+						routePath = basicLit.Value
+					} else {
+						routePath = fmt.Sprintf(`"%s%s"`, strings.ReplaceAll(groupRoute, `"`, ``), strings.ReplaceAll(basicLit.Value, `"`, ``))
+					}
+					logger.L.Error(routePath)
+				}
+				if strings.Contains(routePath, "swagger") {
+					return true
+				}
+				route := GinAPI{
+					Source:   f,
+					Group:    "",
+					Method:   nsel.Name,
+					Path:     routePath,
+					Node:     &n,
+					APIParam: &APIParam{},
+				}
+				ProjSchema.GinAPIs = append(ProjSchema.GinAPIs, &route)
+				handlePathNode := f.fullStacks[nodeIndex+3]
+				if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
+					body := funcLit.Body
+					codes, respNames := f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
+					route.APIParam.StructName = f.EnumerateGinBind(int(body.Lbrace), int(body.Rbrace))
+					for i := 0; i < len(codes); i++ {
+						route.APIResopnse = append(route.APIResopnse, &APIResopnse{
+							Code:       codes[i],
+							StructName: respNames[i],
+						})
+					}
+					for _, v := range body.List {
+						if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
+							_ = declStmt
+						}
+					}
+				} else {
+				}
+			}
+		}
+
+		return true
+	})
+	return
+}
+
 func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) (codes, structNames []string) {
 	codes, structNames = []string{}, []string{}
 	ast.Inspect(f.AstFile, func(n ast.Node) bool {
@@ -332,12 +411,6 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 
 		switch {
 		case declOK:
-			// logger.S.Info("---------")
-			// logger.S.Infof("%#v", decl)
-			// logger.S.Infof("%#v", decl.Decl)
-			// f.PrintNode(nodeIndex - 1)
-			// f.PrintNode(nodeIndex)
-			// f.PrintNode(nodeIndex + 1)
 		case identOK:
 			if ident.Obj != nil {
 				if ident.Obj.Kind == ast.Var {
@@ -345,6 +418,30 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 						if len(assignStmt.Rhs) != 0 {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
+									if selectorExpr.Sel.Name == "Group" {
+										logger.S.Infof("%#v", selectorExpr)
+										pppNode := f.fullStacks[nodeIndex+5]
+										f.PrintNode(nodeIndex + 5)
+										if kind, value, ok := helper.ExtractBasicLit(pppNode); ok && kind == 9 {
+											groupPath := value
+											logger.S.Infof("groupPath = (%s)", groupPath)
+
+											if blk, blkOK := helper.ExtractBlockStml(f.fullStacks[nodeIndex+6]); blkOK {
+												f.EnumerateGinRoute(groupPath, int(blk.Lbrace), int(blk.Rbrace))
+											}
+											newGinIdent := NewGinIdentifier()
+											newGinIdent.Source = f
+											newGinIdent.Node = ident
+											newGinIdent.InstancingCall = callExpr
+											existGinIndent := ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
+											if existGinIndent == nil {
+												ProjSchema.AddGinIdentifier(f, newGinIdent)
+												existGinIndent = ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
+											}
+
+										}
+
+									}
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
 										newGinIdent := NewGinIdentifier()
 										newGinIdent.Source = f
@@ -356,11 +453,8 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 											existGinIndent = ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
 										}
 										existGinIndent.AddCall(callExpr)
-										// detect callSel node
 										callSel := f.fullStacks[nodeIndex-1]
-										// logger.S.Infof("call %#v", callSel)
 										if nextSel, ok := callSel.(*ast.SelectorExpr); ok {
-											// logger.S.Info("---------")
 											nx, nsel, _ := extractSelectorExpr(nextSel)
 											_ = nx
 											switch nsel.Name {
@@ -370,11 +464,9 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 												if basicLit, basicLitOK := routePathNode.(*ast.BasicLit); basicLitOK {
 													routePath = basicLit.Value
 												}
-												// logger.S.Infof("routePathNode %#v", routePathNode)
 												if strings.Contains(routePath, "swagger") {
 													return true
 												}
-												// logger.S.Info("---------")
 												route := GinAPI{
 													Source:   f,
 													Group:    "",
@@ -384,18 +476,10 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 													APIParam: &APIParam{},
 												}
 												ProjSchema.GinAPIs = append(ProjSchema.GinAPIs, &route)
-
-												// handle
 												handlePathNode := f.fullStacks[nodeIndex+3]
-												// logger.S.Infof("%s handlePathNode %#v", routePath, handlePathNode)
-
-												// anoymouse
 												if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
-													// logger.S.Infof("%s funcLit %#v", routePath, funcLit)
 													body := funcLit.Body
-													// logger.S.Infof("%s funcLit.body %#v", routePath, body)
 													codes, respNames := f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
-
 													route.APIParam.StructName = f.EnumerateGinBind(int(body.Lbrace), int(body.Rbrace))
 													for i := 0; i < len(codes); i++ {
 														route.APIResopnse = append(route.APIResopnse, &APIResopnse{
@@ -404,34 +488,12 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 														})
 													}
 													for _, v := range body.List {
-														//ast.DeclStmt
 														if declStmt, declStmtOK := v.(*ast.DeclStmt); declStmtOK {
 															_ = declStmt
-															// logger.S.Infof("%s funcLit.body.declStmt %#v", routePath, declStmt)
 														}
 													}
 												} else {
-													// no handle func
-													// add 200
-													//f.PrintNode(nodeIndex + 3)
 												}
-
-												// logger.S.Error("here")
-												// f.PrintNode(nodeIndex)
-												// f.PrintNode(nodeIndex + 1)
-												// f.PrintNode(nodeIndex + 2)
-												// f.PrintNode(nodeIndex + 3)
-												// f.PrintNode(nodeIndex + 4)
-												// f.PrintNode(nodeIndex + 5)
-
-												// nn := f.fullStacks[nodeIndex+3]
-												// if fl, ok := helper.ExtractFuncLit(nn); ok {
-												// 	logger.S.Infof("%#v", fl)
-												// 	logger.S.Infof("%#v", fl.Body)
-												// 	for _, v := range fl.Body.List {
-												// 		logger.S.Infof("%#v", v)
-												// 	}
-												// }
 
 											}
 										}

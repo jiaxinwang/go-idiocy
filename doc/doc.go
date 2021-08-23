@@ -47,9 +47,9 @@ func Analyse(dir string) {
 	doc.Paths = make(map[string]*openapi2.PathItem)
 
 	for _, v := range schema.ProjSchema.GinAPIs {
-		logger.S.Infof("(%s)%s --> %v", v.Method, v.Path, v.Node)
+		logger.S.Infof("(%s)%s --> %v", v.Method, strings.Trim(v.Path, `"`), v.Node)
 		pathItem := &openapi2.PathItem{}
-		doc.Paths[v.Path] = pathItem
+		doc.Paths[strings.Trim(v.Path, `"`)] = pathItem
 		opt := &openapi2.Operation{}
 		switch v.Method {
 		case "GET":

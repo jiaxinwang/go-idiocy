@@ -92,3 +92,11 @@ func ExtractFuncLit(node ast.Node) (fl *ast.FuncLit, ok bool) {
 	}
 	return nil, false
 }
+
+func ExtractBlockStml(node ast.Node) (fl *ast.BlockStmt, ok bool) {
+	if blk, blkOK := node.(*ast.BlockStmt); blkOK {
+		_ = blk
+		return blk, blkOK
+	}
+	return nil, false
+}
