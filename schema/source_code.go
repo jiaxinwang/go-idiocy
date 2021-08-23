@@ -311,7 +311,7 @@ func (f *SourceFile) EnumerateGinRoute(groupRoute string, Lbrace, Rbrace int) {
 					APIParam: &APIParam{},
 				}
 				ProjSchema.GinAPIs = append(ProjSchema.GinAPIs, &route)
-				handlePathNode := f.fullStacks[nodeIndex+3]
+				handlePathNode := f.fullStacks[nodeIndex+4]
 				if funcLit, funcLitOk := handlePathNode.(*ast.FuncLit); funcLitOk {
 					body := funcLit.Body
 					codes, respNames := f.EnumerateGinResponse(int(body.Lbrace), int(body.Rbrace))
@@ -509,22 +509,6 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 
 		case callExprOK:
 			_ = callExpr
-			// if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
-			// 	switch selectorExpr.Sel.Name {
-			// 	case `GET`, `POST`, `PUT`, `PATCH`, `DELETE`:
-			// 		logger.S.Infof("callExpr %#v", callExpr)
-			// 		logger.S.Infof("callExpr.Fun %#v", callExpr.Fun)
-			// 		logger.S.Infof("callExpr.selectorExpr %#v", selectorExpr)
-			// 		logger.S.Infof("callExpr.selectorExpr.X %#v", selectorExpr.X)
-			// 		logger.S.Infof("callExpr.selectorExpr.Sel %#v", selectorExpr.Sel)
-
-			// 		if iden, idenOK := selectorExpr.X.(*ast.Ident); idenOK {
-			// 			logger.S.Infof("callExpr.selectorExpr.X.Obj %#v", iden.Obj)
-			// 			logger.S.Infof("callExpr.selectorExpr.X.Obj.Name %#v", iden.Name)
-
-			// 		}
-			// 	}
-			// }
 		case typeSpecOK:
 			typePos := -1
 			if typeSpec.Type.Pos().IsValid() {
