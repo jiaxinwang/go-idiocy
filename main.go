@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"idiocy/apitmpl"
 	"idiocy/logger"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jiaxinwang/common/fs"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/urfave/cli/v2"
@@ -115,10 +117,17 @@ func run(c *cli.Context) error {
 		}
 
 		if v.APIParam != nil && !strings.EqualFold(v.APIParam.StructName, "") {
-			logger.S.Warn(v.APIParam.StructName)
 			parts := strings.Split(v.APIParam.StructName, ".")
 			base := parts[len(parts)-1]
-			logger.S.Warn(base)
+			opt.Parameters = openapi2.Parameters{
+				&openapi2.Parameter{
+					In:          "body",
+					Name:        "body",
+					Required:    true,
+					Description: "TODO:",
+					Schema:      openapi3.NewSchemaRef(fmt.Sprintf("#/definitions/%s", base), nil),
+				},
+			}
 		}
 
 	}
