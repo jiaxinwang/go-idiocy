@@ -1,4 +1,4 @@
-module idiocy
+module github.com/jiaxinwang/go-idiocy
 
 go 1.15
 
