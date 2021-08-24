@@ -8,9 +8,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func init() {
-}
-
 func main() {
 	app := &cli.App{
 		Name: "idiocy",
