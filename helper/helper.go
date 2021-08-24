@@ -46,6 +46,18 @@ func ExtractBasicLit(node ast.Node) (kind int, value string, ok bool) {
 	return -1, "", false
 }
 
+func ExtractUnary(node ast.Node) (unaryExpr *ast.UnaryExpr, ok bool) {
+	unary, unaryOK := node.(*ast.UnaryExpr)
+	if unaryOK {
+		return unary, true
+	}
+	return nil, false
+}
+func ExtractCompositeLit(node ast.Node) (cl *ast.CompositeLit, ok bool) {
+	cl, ok = node.(*ast.CompositeLit)
+	return
+}
+
 func ExtractIdent(node ast.Node) (name string, object *ast.Object, ok bool) {
 	ident, identOK := node.(*ast.Ident)
 	if identOK {
@@ -93,7 +105,7 @@ func ExtractFuncLit(node ast.Node) (fl *ast.FuncLit, ok bool) {
 	return nil, false
 }
 
-func ExtractBlockStml(node ast.Node) (fl *ast.BlockStmt, ok bool) {
+func ExtractBlockStml(node ast.Node) (bl *ast.BlockStmt, ok bool) {
 	if blk, blkOK := node.(*ast.BlockStmt); blkOK {
 		_ = blk
 		return blk, blkOK

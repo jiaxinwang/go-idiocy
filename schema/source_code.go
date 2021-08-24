@@ -3,12 +3,10 @@ package schema
 import (
 	"fmt"
 	"go/ast"
-	"go/token"
 	"idiocy/apitmpl"
 	"idiocy/helper"
 	"idiocy/logger"
 	"idiocy/platform"
-	"log"
 	"strings"
 
 	"github.com/fatih/structtag"
@@ -21,108 +19,20 @@ func (f *SourceFile) walk(fn func(ast.Node) bool) {
 
 func (f *SourceFile) find() {
 	f.BuildStacks()
-	// f.FindDecals()
 	f.FindGinInstance()
 }
 
-func (f *SourceFile) FindDecals() {
-	for _, d := range f.AstFile.Decls {
-		if genDecl, ok := d.(*ast.GenDecl); ok {
-			if genDecl.Tok == token.CONST || genDecl.Tok == token.VAR {
-				for _, cDecl := range genDecl.Specs {
-					if vSpec, ok := cDecl.(*ast.ValueSpec); ok {
-						for i := 0; i < len(vSpec.Names); i++ {
-							// TODO: only basic literals work currently
-							switch v := vSpec.Values[i].(type) {
-							case *ast.BasicLit:
-								f.Decls[vSpec.Names[i].Name] = v.Value
-							default:
-								logger.S.Infof("Name: %s - Unsupported ValueSpec: %+v\n", vSpec.Names[i].Name, v)
-							}
-						}
-					}
-				}
-			}
-
-		}
-	}
-
-	log.Println("Decls:", f.Decls)
-}
-
 func (f *SourceFile) FindGinInstance() {
-
-	// var lastAssignStmt *ast.AssignStmt
 	f.walk(func(node ast.Node) bool {
 		if node == nil {
 			return false
 		}
-
-		logger.S.Infof("----- %d --> %d -----", int(node.Pos()), int(node.End()))
-		logger.S.Info(string(f.Content[node.Pos()-1 : node.End()-1]))
-
-		// BadExpr
-		// Ident
 		identExpr, identOK := node.(*ast.Ident)
-		// Ellipsis
-		// BasicLit
-
-		//!FuncLit A function literal represents an anonymous function.
-		funcLitExpr, funcLitOK := node.(*ast.FuncLit) // FuncLit
-		// CompositeLit
-		// ParenExpr
-		// SelectorExpr
-		// IndexExpr
-		// SliceExpr
-		// TypeAssertExpr
-
 		callExpr, callOK := node.(*ast.CallExpr) // CallExpr
-
-		// StarExpr
-		// UnaryExpr
-		// BinaryExpr
-		// KeyValueExpr
-
-		// BadStmt
-		// DeclStmt
-		// EmptyStmt
-		// LabeledStmt
-		// ExprStmt
-		// SendStmt
-		// IncDecStmt
-
-		assignStmt, assignOK := node.(*ast.AssignStmt) // AssignStmt
-		// GoStmt
-		// DeferStmt
-		// ReturnStmt
-		// BranchStmt
-
-		blockStmt, blockStmtOK := node.(*ast.BlockStmt) // BlockStmt
-		// IfStmt
-		// CaseClause
-		// SwitchStmt
-		// TypeSwitchStmt
-		// CommClause
-		// SelectStmt
-		// ForStmt
-		// RangeStmt
-
 		switch {
-		case funcLitOK:
-			logger.S.Infof("funcLit %d --> %d", funcLitExpr.Body.Lbrace, funcLitExpr.Body.Rbrace)
-			logger.S.Info(string(f.Content[funcLitExpr.Body.Lbrace-1 : funcLitExpr.Body.Rbrace-1]))
-		case blockStmtOK:
-			logger.S.Infof("block %d --> %d", blockStmt.Lbrace, blockStmt.Rbrace)
-			logger.S.Info(string(f.Content[blockStmt.Lbrace-1 : blockStmt.Rbrace-1]))
-		case assignOK:
-			logger.S.Infof("assign %s", assignStmt.Tok.String())
 		case identOK:
-			logger.S.Info(identExpr.Name)
-			logger.S.Infof("%#v", identExpr)
 			if identExpr.Obj != nil {
-				logger.S.Infof("%#v", identExpr.Obj)
 				if identExpr.Obj.Decl != nil {
-					logger.S.Infof("%#v", identExpr.Obj.Decl)
 				}
 			}
 
@@ -130,9 +40,7 @@ func (f *SourceFile) FindGinInstance() {
 			if !DetectInstanceCall(callExpr.Fun, platform.GinInstanceCall) {
 				return false
 			}
-
 			index := f.NodeIndex(node)
-			// idenNode := f.FindCallLIdent(index)
 			f.FindCallLIdent(index)
 
 		default:
@@ -178,27 +86,9 @@ func (f *SourceFile) EnumerateGinHandles() {
 			if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 				_ = selectorExpr
 				if x, sel, ok := extractSelectorExpr(callExpr.Fun.(*ast.SelectorExpr)); ok {
+					_ = x
 					switch sel.Name {
 					case "GET", "PUT", "PATH", "POST", "DELETE":
-						logger.S.Infof("x %#v", x)
-						logger.S.Infof("sel %#v", sel)
-						logger.S.Infof("args %#v", callExpr.Args)
-						logger.S.Infof("args %#v", callExpr.Args[0]) // path
-						if len(callExpr.Args) > 1 {
-							logger.S.Infof("args %#v", callExpr.Args[1]) // func
-						}
-
-						// p := ""
-						// if bl, blOK := callExpr.Args[0].(*ast.BasicLit); blOK {
-						// 	p = bl.Value
-						// }
-
-						// APIs = append(APIs, API{
-						// 	f,
-						// 	p,
-						// 	sel.Name,
-						// })
-
 					}
 				}
 
@@ -244,7 +134,6 @@ func (f *SourceFile) EnumerateGinBind(Lbrace, Rbrace int) (paramName string) {
 
 		switch sel.Name {
 		case "ShouldBind":
-			logger.S.Warn("hit")
 			nn := f.fullStacks[nodeIndex+6]
 			if _, obj, ok := helper.ExtractIdent(nn); ok {
 				fullname := helper.ExtractObjectTypeName(obj)
@@ -286,18 +175,14 @@ func (f *SourceFile) EnumerateGinRoute(groupRoute string, Lbrace, Rbrace int) {
 			_ = nx
 			switch nsel.Name {
 			case "GET", "POST", "PUT", "PATCH", "DELETE":
-				logger.S.Warn("here")
 				routePathNode := f.fullStacks[nodeIndex+3]
-				f.PrintNode(nodeIndex + 3)
 				routePath := ""
 				if basicLit, basicLitOK := routePathNode.(*ast.BasicLit); basicLitOK {
-					logger.L.Error(groupRoute)
 					if strings.EqualFold(groupRoute, "") {
 						routePath = basicLit.Value
 					} else {
 						routePath = fmt.Sprintf(`"%s%s"`, strings.ReplaceAll(groupRoute, `"`, ``), strings.ReplaceAll(basicLit.Value, `"`, ``))
 					}
-					logger.L.Error(routePath)
 				}
 				if strings.Contains(routePath, "swagger") {
 					return true
@@ -385,7 +270,6 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) (codes, structName
 					responseTypeName = helper.ExtractObjectTypeName(object)
 				}
 			}
-			// logger.S.Infof("args statuCode %s response %s", statusCode, responseTypeName)
 			codes = append(codes, statusCode)
 			structNames = append(structNames, responseTypeName)
 		}
@@ -393,6 +277,98 @@ func (f *SourceFile) EnumerateGinResponse(Lbrace, Rbrace int) (codes, structName
 		return true
 	})
 	return
+}
+
+func (f *SourceFile) EnumerateLazy(prefix string, Lbrace, Rbrace int) (paths, methods, codes, structNames []string) {
+	paths, methods, codes, structNames = []string{}, []string{}, []string{}, []string{}
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		from, to := 0, 0
+		if n.Pos().IsValid() {
+			from = int(n.Pos())
+			if from < Lbrace {
+				return true
+			}
+		}
+
+		if n.End().IsValid() {
+			to = int(n.End())
+			if to >= Rbrace {
+				return true
+			}
+		}
+
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+
+		if fl, flOK := helper.ExtractFuncLit(n); flOK {
+			pathNode := f.fullStacks[nodeIndex-1]
+			methodNode := f.fullStacks[nodeIndex-2]
+			methodName, _, _ := helper.ExtractIdent(methodNode)
+
+			_, pathString, _ := helper.ExtractBasicLit(pathNode)
+			paths = append(paths, strings.ReplaceAll(fmt.Sprintf("%s%s", prefix, pathString), `"`, ``))
+			methods = append(methods, methodName)
+			codes = append(codes, "200")
+
+			if bl, ok := helper.ExtractBlockStml(fl.Body); ok {
+				modelName := f.EnumerateLazyModel(int(bl.Lbrace), int(bl.Rbrace))
+				structNames = append(structNames, modelName)
+			}
+		}
+
+		return true
+	})
+
+	return
+}
+
+func (f *SourceFile) EnumerateLazyModel(Lbrace, Rbrace int) (modelname string) {
+	ast.Inspect(f.AstFile, func(n ast.Node) bool {
+		if n == nil {
+			return true
+		}
+		from, to := 0, 0
+		if n.Pos().IsValid() {
+			from = int(n.Pos())
+			if from < Lbrace {
+				return true
+			}
+		}
+
+		if n.End().IsValid() {
+			to = int(n.End())
+			if to >= Rbrace {
+				return true
+			}
+		}
+
+		nodeIndex := f.NodeIndex(n)
+		_ = nodeIndex
+
+		//Model
+		if name, obj, ok := helper.ExtractIdent(n); ok && strings.Compare(name, "Model") == 0 {
+			_ = obj
+			nn := f.fullStacks[nodeIndex+1]
+			if unary, ok := helper.ExtractUnary(nn); ok {
+				if unary.Op == 17 {
+					if cl, clOK := helper.ExtractCompositeLit(unary.X); clOK {
+						if x, sel, ok := helper.ExtractSelectorExpr(cl.Type); ok {
+							name, _, _ := helper.ExtractIdent(ast.Node(*x))
+							modelname = fmt.Sprintf("%s.%s", name, sel.Name)
+							return false
+						}
+
+					}
+
+				}
+			}
+		}
+		return true
+	})
+	return modelname
 }
 
 func (f *SourceFile) EnumerateStructAndGinVars() {
@@ -407,9 +383,44 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 		callExpr, callExprOK := n.(*ast.CallExpr)
 		ident, identOK := n.(*ast.Ident)
 		decl, declOK := n.(*ast.DeclStmt)
+		blk, blkOK := n.(*ast.BlockStmt)
 		_ = decl
+		_ = blk
 
 		switch {
+		case blkOK:
+			nn := f.fullStacks[nodeIndex-18]
+
+			groupPath := ""
+
+			if name, _, ok := helper.ExtractIdent(nn); ok && strings.EqualFold(name, "Group") {
+				nameNode := f.fullStacks[nodeIndex-17]
+				if kind, value, ok := helper.ExtractBasicLit(nameNode); ok && kind == 9 {
+					groupPath = value
+					paths, methods, codes, models := f.EnumerateLazy(groupPath, int(blk.Lbrace), int(blk.Rbrace))
+					for i := 0; i < len(paths); i++ {
+						switch methods[i] {
+						case "GET", "POST", "PUT", "PATCH", "DELETE":
+							routePath := paths[i]
+							route := GinAPI{
+								Source:   f,
+								Group:    "",
+								Method:   methods[i],
+								Path:     routePath,
+								Node:     &n,
+								APIParam: &APIParam{},
+							}
+							ProjSchema.GinAPIs = append(ProjSchema.GinAPIs, &route)
+							route.APIParam.StructName = models[i]
+							route.APIResopnse = append(route.APIResopnse, &APIResopnse{
+								Code:       codes[i],
+								StructName: models[i],
+							})
+						}
+					}
+				}
+			}
+
 		case declOK:
 		case identOK:
 			if ident.Obj != nil {
@@ -419,13 +430,9 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 							if callExpr, callExprOK := assignStmt.Rhs[0].(*ast.CallExpr); callExprOK {
 								if selectorExpr, selectorExprOK := callExpr.Fun.(*ast.SelectorExpr); selectorExprOK {
 									if selectorExpr.Sel.Name == "Group" {
-										logger.S.Infof("%#v", selectorExpr)
-										pppNode := f.fullStacks[nodeIndex+5]
-										f.PrintNode(nodeIndex + 5)
-										if kind, value, ok := helper.ExtractBasicLit(pppNode); ok && kind == 9 {
+										groupBlockNode := f.fullStacks[nodeIndex+5]
+										if kind, value, ok := helper.ExtractBasicLit(groupBlockNode); ok && kind == 9 {
 											groupPath := value
-											logger.S.Infof("groupPath = (%s)", groupPath)
-
 											if blk, blkOK := helper.ExtractBlockStml(f.fullStacks[nodeIndex+6]); blkOK {
 												f.EnumerateGinRoute(groupPath, int(blk.Lbrace), int(blk.Rbrace))
 											}
@@ -438,9 +445,7 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 												ProjSchema.AddGinIdentifier(f, newGinIdent)
 												existGinIndent = ProjSchema.GinIdentifierWithFileIdent(f, callExpr)
 											}
-
 										}
-
 									}
 									if equalSelectorExpr(selectorExpr, "gin", "Default") {
 										newGinIdent := NewGinIdentifier()
@@ -558,7 +563,6 @@ func (f *SourceFile) EnumerateStructAndGinVars() {
 								propName = jsonTag.Name
 							}
 						} else {
-							// logger.S.Warn(err)
 						}
 					}
 				}
@@ -660,7 +664,6 @@ func (f *SourceFile) FindCallLIdent(callIndex int) ast.Node {
 
 	switch assignStmt.Tok.String() {
 	case "=", ":=":
-		logger.S.Infof("%#v", lNode)
 		return lNode
 	}
 

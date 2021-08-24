@@ -22,10 +22,8 @@ func Analyse(dir string) {
 	for _, v := range schema.ProjSchema.SourceFile {
 		v.GinIdents = make([]*ast.Ident, 0)
 		v.ParseFile()
-		v.BuildStacks()
-		// work
+		v.BuildStacks() // work
 		v.EnumerateStructAndGinVars()
-		// v.EnumerateGinHandles()
 	}
 
 	logger.S.Info("---> ", len(schema.ProjSchema.GinIdentifiers))
