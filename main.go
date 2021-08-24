@@ -1,8 +1,9 @@
 package main
 
 import (
-	"idiocy/doc"
 	"os"
+
+	"github.com/jiaxinwang/go-idiocy/doc"
 
 	"github.com/urfave/cli/v2"
 )

@@ -2,13 +2,14 @@ package schema
 
 import (
 	"go/ast"
-	"idiocy/logger"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/jiaxinwang/go-idiocy/logger"
 
 	"github.com/jiaxinwang/err2"
 	"golang.org/x/mod/modfile"

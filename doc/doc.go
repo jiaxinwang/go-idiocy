@@ -3,11 +3,12 @@ package doc
 import (
 	"fmt"
 	"go/ast"
-	"idiocy/apitmpl"
-	"idiocy/logger"
-	"idiocy/schema"
 	"path"
 	"strings"
+
+	"github.com/jiaxinwang/go-idiocy/apitmpl"
+	"github.com/jiaxinwang/go-idiocy/logger"
+	"github.com/jiaxinwang/go-idiocy/schema"
 
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi3"

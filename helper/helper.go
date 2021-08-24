@@ -3,7 +3,8 @@ package helper
 import (
 	"fmt"
 	"go/ast"
-	"idiocy/logger"
+
+	"github.com/jiaxinwang/go-idiocy/logger"
 )
 
 //

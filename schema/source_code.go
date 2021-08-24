@@ -3,11 +3,12 @@ package schema
 import (
 	"fmt"
 	"go/ast"
-	"idiocy/apitmpl"
-	"idiocy/helper"
-	"idiocy/logger"
-	"idiocy/platform"
 	"strings"
+
+	"github.com/jiaxinwang/go-idiocy/apitmpl"
+	"github.com/jiaxinwang/go-idiocy/helper"
+	"github.com/jiaxinwang/go-idiocy/logger"
+	"github.com/jiaxinwang/go-idiocy/platform"
 
 	"github.com/fatih/structtag"
 	"github.com/getkin/kin-openapi/openapi3"
