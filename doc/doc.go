@@ -102,6 +102,6 @@ func Analyse(dir string) {
 	}
 
 	contentJSON, _ := jsoniter.MarshalIndent(doc, "", "    ")
-	swaggerDocFilepath := path.Join(path.Dir(dir), `idiocy`, `swagger.json`)
+	swaggerDocFilepath := path.Join(path.Dir(dir), `doc`, `swagger.json`)
 	fs.Save(contentJSON, swaggerDocFilepath)
 }
